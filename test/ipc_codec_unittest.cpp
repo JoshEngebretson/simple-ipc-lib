@@ -3,6 +3,8 @@
 namespace {
 
 // Convenience helper to convert ints and 4-byte strings into a char array.
+// We could coerse WireType do to this but that might mask bugs since that is
+// what we want to test with this helper.
 class D2V {
 public:
   explicit D2V(int v) {
@@ -44,18 +46,6 @@ int TestIPCBuffer(TestTransport* transport, D2V fmt[], size_t count) {
 }
 
 }  // namespace.
-
-
-int TestDecoderSimple(const char* data, size_t size) {
-  TestTransport transport;
-  TestChannel channel(&transport);
-
-  TestChannel::RxHandler rx;
-
-  ipc::Decoder<TestChannel::RxHandler> dec(&rx);
-  dec.OnData(data, size);
-  return dec.Success()? 0 : 1;
-}
 
 
 int TestCodecRaw1() {
@@ -158,7 +148,69 @@ int TestCodecRaw2() {
   if (rx.GetArg(1).Id() != ipc::TYPE_STRING16)
     return -5;
   if (rx.GetArg(2).Id() != ipc::TYPE_UINT32)
+    return -6;
+
+  return 0;
+}
+
+int TestCodecRaw3() {
+  const char ca  = 'w';
+  const wchar_t cb = L'x';
+  const char cc = 'y';
+  const char* cd = "123456789";
+  
+  TestTransport transport;
+  TestChannel channel(&transport);
+  TestMessage10 msg10;
+
+  msg10.DoSend(&channel, ca, cb, cc, cd);
+
+  D2V fmt [] = {
+    D2V(ipc::Encoder::ENC_HEADER),       // start of header mark
+    D2V(10),                             // msg id
+    D2V(4),                              // arg count
+    D2V(17),                             // data count
+    D2V(ipc::TYPE_CHAR8),
+    D2V(ipc::TYPE_CHAR16),
+    D2V(ipc::TYPE_CHAR8),
+    D2V(ipc::TYPE_STRING8 | 
+        ipc::Encoder::ENC_STRN08),
+    D2V(ipc::Encoder::ENC_STARTD),       // start of data mark        
+    D2V(ca),                             // first arg
+    D2V(cb),                             // second arg
+    D2V(cc),                             // third arg
+    D2V(9),                              // fourth arg size
+    D2V("1234"),
+    D2V("5678"),
+    D2V("9\0\0\0"),
+    D2V(ipc::Encoder::ENC_ENDDAT),       // end of data mark
+  };
+
+  int rv = TestIPCBuffer(&transport, fmt, sizeof(fmt)/sizeof(fmt[0]));
+  if (rv != 0)
+    return rv;
+
+  size_t size = 0;
+  const char* data = transport.Receive(&size);
+
+  TestChannel::RxHandler rx;
+  ipc::Decoder<TestChannel::RxHandler> dec(&rx);
+  dec.OnData(data, size);
+
+  if (!dec.Success())
+    return -1;
+  if (rx.MsgId() != 10)
+    return -2;
+  if (rx.GetArgCount() != 4)
+    return -3;
+  if (rx.GetArg(0).Id() != ipc::TYPE_CHAR8)
+    return -4;
+  if (rx.GetArg(1).Id() != ipc::TYPE_CHAR16)
     return -5;
+  if (rx.GetArg(2).Id() != ipc::TYPE_CHAR8)
+    return -6;
+  if (rx.GetArg(3).Id() != ipc::TYPE_STRING8)
+    return -7;
 
   return 0;
 }

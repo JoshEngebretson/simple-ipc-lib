@@ -79,3 +79,11 @@ public:
     return SendMsg(9, ch, a, b, c);
   }
 };
+
+class TestMessage10 : public ipc::MsgOut<TestChannel> {
+public:
+  size_t DoSend(TestChannel* ch, const char a, const wchar_t b, const char c, const char* d) {
+    return SendMsg(10, ch, a, b, c, d);
+  }
+};
+

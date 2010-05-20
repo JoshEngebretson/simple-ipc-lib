@@ -6,40 +6,46 @@
 namespace {
 
 #if defined(WIN32)
-void TestError(int error) {
+void TestErrorStop(int error) {
   __debugbreak();
 }
 #else
-void TestError(int error) {
+void TestErrorStop(int error) {
   // TODO(cpu): port.
 }
 #endif
 
-void TestRunner(int result) {
-  if (result == 0)
+void TestRunner(const char* test, int result) {
+  if (result == 0) {
+    printf("[pass] %s\n", test);
     return;
-  TestError(result);
+  }
+  printf("[fail] (error %d) %s\n", result, test);
+  TestErrorStop(result);
 }
-
 } // namespace.
+
+#define TEST_FN(name) TestRunner(#name, name)
 
 /////////////////////////////////////////////////////////////////////////////////////////
 // Main test driver
 
 int TestCodecRaw1();
 int TestCodecRaw2();
+int TestCodecRaw3();
 int TestForwardDispatch();
 int TestDispatchRoundTrip();
 int TestRawPipeTransport();
 int TestFullRoundTrip();
 
 int wmain(int argc, wchar_t* argv[]) {
-  TestRunner(TestCodecRaw1());
-  TestRunner(TestCodecRaw2());
-  TestRunner(TestForwardDispatch());
-  TestRunner(TestDispatchRoundTrip());
-  TestRunner(TestRawPipeTransport());
-  TestRunner(TestFullRoundTrip());
+  TEST_FN(TestCodecRaw1());
+  TEST_FN(TestCodecRaw2());
+  TEST_FN(TestCodecRaw3());
+  TEST_FN(TestForwardDispatch());
+  TEST_FN(TestDispatchRoundTrip());
+  TEST_FN(TestRawPipeTransport());
+  TEST_FN(TestFullRoundTrip());
   printf("Test succeeded\n");
 	return 0;
 }
