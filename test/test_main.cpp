@@ -33,6 +33,8 @@ void TestRunner(const char* test, int result) {
 int TestCodecRaw1();
 int TestCodecRaw2();
 int TestCodecRaw3();
+int TestCodecRaw4();
+int TestCodecRaw5();
 int TestForwardDispatch();
 int TestDispatchRoundTrip();
 int TestRawPipeTransport();
@@ -42,6 +44,8 @@ int wmain(int argc, wchar_t* argv[]) {
   TEST_FN(TestCodecRaw1());
   TEST_FN(TestCodecRaw2());
   TEST_FN(TestCodecRaw3());
+  TEST_FN(TestCodecRaw4());
+  TEST_FN(TestCodecRaw5());
   TEST_FN(TestForwardDispatch());
   TEST_FN(TestDispatchRoundTrip());
   TEST_FN(TestRawPipeTransport());

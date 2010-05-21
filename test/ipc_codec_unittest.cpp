@@ -170,10 +170,10 @@ int TestCodecRaw3() {
     D2V(10),                             // msg id
     D2V(4),                              // arg count
     D2V(17),                             // data count
-    D2V(ipc::TYPE_CHAR8),
-    D2V(ipc::TYPE_CHAR16),
-    D2V(ipc::TYPE_CHAR8),
-    D2V(ipc::TYPE_STRING8 | 
+    D2V(ipc::TYPE_CHAR8),                // first arg type
+    D2V(ipc::TYPE_CHAR16),               // second arg type
+    D2V(ipc::TYPE_CHAR8),                // third arg type
+    D2V(ipc::TYPE_STRING8 |              // fourth arg type
         ipc::Encoder::ENC_STRN08),
     D2V(ipc::Encoder::ENC_STARTD),       // start of data mark        
     D2V(ca),                             // first arg
@@ -211,6 +211,102 @@ int TestCodecRaw3() {
     return -6;
   if (rx.GetArg(3).Id() != ipc::TYPE_STRING8)
     return -7;
+
+  return 0;
+}
+
+int TestCodecRaw4() {
+  const char arr[] = { 101, 102, 103, 104, 105, 106, 107, 108, 109, 110 };
+  int  id = 666;
+
+  TestTransport transport;
+  TestChannel channel(&transport);
+  TestMessage12 msg12;
+
+  msg12.DoSend(&channel, arr, sizeof(arr), id);
+
+  const char chk1[] = {arr[0], arr[1], arr[2], arr[3]};
+  const char chk2[] = {arr[4], arr[5], arr[6], arr[7]};
+  const char chk3[] = {arr[8], arr[9], 0, 0};
+
+  D2V fmt [] = {
+    D2V(ipc::Encoder::ENC_HEADER),       // start of header mark
+    D2V(12),                             // msg id
+    D2V(2),                              // arg count
+    D2V(13),                             // data count
+    D2V(ipc::TYPE_BARRAY |               // first arg type
+        ipc::Encoder::ENC_STRN08),
+    D2V(ipc::TYPE_INT32),                // second arg type
+    D2V(ipc::Encoder::ENC_STARTD),       // start of data mark
+    D2V(sizeof(arr)),                    // size of frist arg
+    D2V(chk1),                           // first argument
+    D2V(chk2),
+    D2V(chk3),
+    D2V(id),                             // second argument
+    D2V(ipc::Encoder::ENC_ENDDAT),       // end of data mark
+  };
+
+  int rv = TestIPCBuffer(&transport, fmt, sizeof(fmt)/sizeof(fmt[0]));
+  if (rv != 0)
+    return rv;
+
+  size_t size = 0;
+  const char* data = transport.Receive(&size);
+
+  TestChannel::RxHandler rx;
+  ipc::Decoder<TestChannel::RxHandler> dec(&rx);
+  dec.OnData(data, size);
+
+  if (!dec.Success())
+    return -1;
+  if (rx.MsgId() != 12)
+    return -2;
+  if (rx.GetArgCount() != 2)
+    return -3;
+  if (rx.GetArg(0).Id() != ipc::TYPE_BARRAY)
+    return -4;
+  if (rx.GetArg(1).Id() != ipc::TYPE_INT32)
+    return -5;
+
+  return 0;
+}
+
+int TestCodecRaw5() {
+  TestTransport transport;
+  TestChannel channel(&transport);
+  TestMessage13 msg13;
+  msg13.DoSend(&channel, NULL, 0);
+
+  D2V fmt [] = {
+    D2V(ipc::Encoder::ENC_HEADER),       // start of header mark
+    D2V(13),                             // msg id
+    D2V(1),                              // arg count
+    D2V(8),                              // data count
+    D2V(ipc::TYPE_NULLBARRAY),           // first arg type
+    D2V(ipc::Encoder::ENC_STARTD),       // start of data mark
+    D2V(-1),                             // first arg (null array)
+    D2V(ipc::Encoder::ENC_ENDDAT),       // end of data mark
+  };
+
+  int rv = TestIPCBuffer(&transport, fmt, sizeof(fmt)/sizeof(fmt[0]));
+  if (rv != 0)
+    return rv;
+
+  size_t size = 0;
+  const char* data = transport.Receive(&size);
+
+  TestChannel::RxHandler rx;
+  ipc::Decoder<TestChannel::RxHandler> dec(&rx);
+  dec.OnData(data, size);
+
+  if (!dec.Success())
+    return -1;
+  if (rx.MsgId() != 13)
+    return -2;
+  if (rx.GetArgCount() != 1)
+    return -3;
+  if (rx.GetArg(0).Id() != ipc::TYPE_NULLBARRAY)
+    return -4;
 
   return 0;
 }

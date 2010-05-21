@@ -87,3 +87,18 @@ public:
   }
 };
 
+class TestMessage12 : public ipc::MsgOut<TestChannel> {
+public:
+  size_t DoSend(TestChannel* ch, const char a[], size_t len, int b) {
+    ipc::ByteArray arr(len, a);
+    return SendMsg(12, ch, arr, b);
+  }
+};
+
+class TestMessage13: public ipc::MsgOut<TestChannel> {
+public:
+  size_t DoSend(TestChannel* ch, const char a[], size_t len) {
+    ipc::ByteArray arr(len, a);
+    return SendMsg(13, ch, arr);
+  }
+};

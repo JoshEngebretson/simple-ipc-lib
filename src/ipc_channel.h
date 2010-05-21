@@ -122,7 +122,10 @@ class Channel {
         case ipc::TYPE_NULLSTRING16:
           list_.push_back(WireType(static_cast<wchar_t*>(NULL)));
           break;
-        default: 
+        case ipc::TYPE_NULLBARRAY:
+          list_.push_back(WireType(ipc::ByteArray(0, NULL)));
+          break;
+        default:
           return false;
       }
       return true;
@@ -195,6 +198,7 @@ private:
 
       case ipc::TYPE_NULLSTRING8:
       case ipc::TYPE_NULLSTRING16:
+      case ipc::TYPE_NULLBARRAY:
         return encoder->OnWord(wtype.GetAsBits(), wtype.Id());
 
       case ipc::TYPE_UNIX_FD:
