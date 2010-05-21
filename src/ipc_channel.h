@@ -1,4 +1,19 @@
-#pragma once
+// Copyright (c) 2010 Google Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+#ifndef SIMPLE_IPC_CHANNEL_H_
+#define SIMPLE_IPC_CHANNEL_H_
 
 #include <vector>
 #include "ipc_wire_types.h"
@@ -92,16 +107,23 @@ class Channel {
     return dispatch ? dispatch->OnMsgIn(handler.MsgId(), this, args, np) : -3;
   }
 
+  // This class is using during receiving as the callback handler for the decoder.
+  // Its function is to receive each decoded type and transform it into WireType objects.
+  //
+  // This class would be private except that we have unit tests that use it as
+  // convenience. Treat it as private though.
   class RxHandler {
    public:
     RxHandler() : msg_id_(-1) {} 
 
+    // Called when a valid message preamble is received.
     bool OnMessageStart(int id, int n_args) {
       msg_id_ = id;
       list_.reserve(n_args);
       return true;
     }
 
+    // Handles the word-sized decoded types.
     bool OnWord(const void* bits, int type_id) {
       switch (type_id) {
         case ipc::TYPE_INT32:
@@ -131,6 +153,7 @@ class Channel {
       return true;
     }
 
+    // Handles the byte-sized arrays.
     bool OnString8(std::string& str, int type_id) {
       switch (type_id) {
         case ipc::TYPE_STRING8:
@@ -145,6 +168,7 @@ class Channel {
       return true;
     }
 
+    // Handles the wchar-sized arrays.
     bool OnString16(std::wstring& str, int type_id) {
       switch (type_id) {
         case ipc::TYPE_STRING16:
@@ -216,3 +240,5 @@ private:
 };
 
 }  // namespace ipc.
+
+#endif // SIMPLE_IPC_CHANNEL_H_
