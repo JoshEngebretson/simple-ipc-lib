@@ -137,7 +137,7 @@ private:
 
   template <typename StringT> 
   void AddStr(const StringT& s ) {
-    const int times = sizeof(Data::value_type) / sizeof(StringT::value_type);
+    const int times = sizeof(Data::value_type) / sizeof(typename StringT::value_type);
     StringT::const_iterator it(s.begin());
     do {
       int v = 0;

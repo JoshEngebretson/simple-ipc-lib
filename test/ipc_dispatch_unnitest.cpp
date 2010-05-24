@@ -14,8 +14,6 @@
 
 #include "ipc_test_helpers.h"
 
-namespace {
-
 struct DummyChannel {};
 
 DEFINE_IPC_MSG_CONV(5, 3) {
@@ -44,8 +42,6 @@ public:
     return ((ix == 56789) && (std::string(tx) == "1234")) ? 77: 0;
   }
 };
-
-}  // namespace.
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // Test the rx dispatch only

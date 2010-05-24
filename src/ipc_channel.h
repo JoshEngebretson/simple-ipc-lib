@@ -32,6 +32,9 @@
 // a message id. The encoder and decoder are loosely coupled with the message and it is the job
 // of the channel to interface them.
 //
+// But there is one special case, when the value to transfer is a OS resource, like a windows
+// handle or a unix file descriptor.
+//
 // Sending Requirements
 //  Encoder should implement:
 //    bool Open(int n_args)
@@ -63,6 +66,9 @@ class Channel {
   static const size_t kMaxNumArgs = 8;
   Channel(TransportT* transport) : transport_(transport) {}
 
+  // Sends the message (|args| + msg_id) to the other end of the connected
+  // |transport| passed to the constructor. This call can block or not depending
+  // pn the transport implementation.
   size_t Send(int msg_id, const WireType* const args[], int n_args)  {
     EncoderT encoder;
     encoder.Open(n_args);
@@ -81,6 +87,10 @@ class Channel {
     return transport_->Send(buf, size);
   }
 
+  // Blocking wait for a message to arrive to from the other end of the
+  // |transport| passed in the constructor. If a valid message is received
+  // the function calls |top_dispatch| and then returns with the return
+  // value of |top_dispatch|.
   template <class DispatchT>
   size_t Receive(DispatchT* top_dispatch) {
     RxHandler handler;
@@ -242,3 +252,4 @@ private:
 }  // namespace ipc.
 
 #endif // SIMPLE_IPC_CHANNEL_H_
+

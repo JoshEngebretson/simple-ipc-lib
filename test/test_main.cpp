@@ -51,10 +51,20 @@ int TestCodecRaw4();
 int TestCodecRaw5();
 int TestForwardDispatch();
 int TestDispatchRoundTrip();
+
+#if defined(WIN32)
 int TestRawPipeTransport();
 int TestFullRoundTrip();
+#else
+int TestRawPipeTransport() { return 0; }
+int TestFullRoundTrip() { return 0; }
+#endif
 
+#if defined(WIN32)
 int wmain(int argc, wchar_t* argv[]) {
+#else
+int main(int argc, char* const argv[]) {
+#endif
   TEST_FN(TestCodecRaw1());
   TEST_FN(TestCodecRaw2());
   TEST_FN(TestCodecRaw3());

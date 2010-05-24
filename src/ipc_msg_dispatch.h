@@ -17,7 +17,8 @@
 
 #include "ipc_wire_types.h"
 
-
+// This templated class will be specialized for each message id. This
+// can be done explicitly or via the DEFINE_IPC_MSG_CONV macros.
 template<int MsgId>
 class MsgParamConverter;
 
@@ -30,7 +31,7 @@ public:
     enum { value = v };
   };
 
-  typedef typename MsgParamConverter<MsgId> PC;
+  typedef MsgParamConverter<MsgId> PC;
 
   size_t OnMsgIn(int msg_id, ChannelT* ch, const WireType* const args[], int count) {
     if (MsgId != msg_id) {
