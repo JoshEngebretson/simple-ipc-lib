@@ -125,7 +125,11 @@ int TestCodecRaw2() {
     D2V(ipc::Encoder::ENC_HEADER),          // start of header mark
     D2V(9),                                 // msg id
     D2V(3),                                 // arg count
+#if defined(WIN32)
     D2V(15),                                // data count
+#else
+    D2V(17),                                // data count (wchar_t is 4 bytes).
+#endif
     D2V(ipc::TYPE_NULLSTRING16),            // first arg type
     D2V(ipc::TYPE_STRING16 |
         ipc::Encoder::ENC_STRN16),          // second arg type
@@ -133,9 +137,17 @@ int TestCodecRaw2() {
     D2V(ipc::Encoder::ENC_STARTD),          // start of data mark        
     D2V(-1),                                // first arg (null string)
     D2V(5),                                 // second arg char count
+#if defined(WIN32)
     D2V("a\0b\0"),                          // second arg part 1
     D2V(" \0d\0"),                          // second arg part 2
     D2V("e\0\0\0"),                         // second arg part 3
+#else
+    D2V(L'a'),
+    D2V(L'b'),
+    D2V(L' '),
+    D2V(L'd'),
+    D2V(L'e'),
+#endif
     D2V(ux),                                // third arg
     D2V(ipc::Encoder::ENC_ENDDAT)           // end of data mark
   };
