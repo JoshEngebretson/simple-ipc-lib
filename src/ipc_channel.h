@@ -137,16 +137,16 @@ class Channel {
     bool OnWord(const void* bits, int type_id) {
       switch (type_id) {
         case ipc::TYPE_INT32:
-          list_.push_back(WireType(int(*reinterpret_cast<const int*>(bits))));
+          list_.push_back(WireType(*reinterpret_cast<const int*>(bits)));
           break;
         case ipc::TYPE_UINT32:
-          list_.push_back(WireType(unsigned int(*reinterpret_cast<const unsigned int*>(bits))));
+          list_.push_back(WireType(*reinterpret_cast<const unsigned int*>(bits)));
           break;
         case ipc::TYPE_CHAR8:
-          list_.push_back(WireType(char(*reinterpret_cast<const char*>(bits))));
+          list_.push_back(WireType(*reinterpret_cast<const char*>(bits)));
           break;
         case ipc::TYPE_CHAR16:
-          list_.push_back(WireType(wchar_t(*reinterpret_cast<const wchar_t*>(bits))));
+          list_.push_back(WireType(*reinterpret_cast<const wchar_t*>(bits)));
           break;
         case ipc::TYPE_NULLSTRING8:
           list_.push_back(WireType(static_cast<char*>(NULL)));

@@ -138,12 +138,12 @@ private:
   template <typename StringT> 
   void AddStr(const StringT& s ) {
     const int times = sizeof(Data::value_type) / sizeof(typename StringT::value_type);
-    StringT::const_iterator it(s.begin());
+    typename StringT::const_iterator it(s.begin());
     do {
       int v = 0;
       for (int ix = 0; ix != times; ++ix) {
         if (it == s.end()) break;
-        v |= (*it) << ix * sizeof(StringT::value_type) * 8;
+        v |= (*it) << ix * sizeof(typename StringT::value_type) * 8;
         ++it;
       }
       PushBack(v);

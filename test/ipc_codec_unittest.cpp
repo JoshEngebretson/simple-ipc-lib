@@ -125,7 +125,7 @@ int TestCodecRaw2() {
     D2V(ipc::Encoder::ENC_HEADER),          // start of header mark
     D2V(9),                                 // msg id
     D2V(3),                                 // arg count
-    D2V(15),                                // data count (40 bytes)
+    D2V(15),                                // data count
     D2V(ipc::TYPE_NULLSTRING16),            // first arg type
     D2V(ipc::TYPE_STRING16 |
         ipc::Encoder::ENC_STRN16),          // second arg type
@@ -252,7 +252,7 @@ int TestCodecRaw4() {
         ipc::Encoder::ENC_STRN08),
     D2V(ipc::TYPE_INT32),                // second arg type
     D2V(ipc::Encoder::ENC_STARTD),       // start of data mark
-    D2V(sizeof(arr)),                    // size of frist arg
+    D2V(int(sizeof(arr))),               // size of frist arg
     D2V(chk1),                           // first argument
     D2V(chk2),
     D2V(chk3),
