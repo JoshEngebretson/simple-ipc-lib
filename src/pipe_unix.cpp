@@ -64,7 +64,7 @@ size_t WriteToFD(int fd, const char* data, size_t size) {
 }  // namespace
 
 
-SocketPair::SocketPair() {
+PipePair::PipePair() {
   fd_[0] = -1;
   fd_[1] = -1;
   

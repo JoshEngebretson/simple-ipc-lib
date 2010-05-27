@@ -17,9 +17,9 @@
 
 #include <vector>
 
-class SocketPair {
+class PipePair {
 public:
-  SocketPair();
+  PipePair();
   
   int fd1() const { return fd_[0]; }
   int fd2() const { return fd_[1]; }
