@@ -341,7 +341,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\test\ipc_transport_unittest.cpp"
+				RelativePath="..\..\..\test\ipc_transport_win_unittest.cpp"
 				>
 			</File>
 			<File
