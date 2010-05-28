@@ -48,6 +48,11 @@ void* RawClientPipeThread(void* p) {
     return NULL;
   }
 
+  if (0 != memcmp(msg_back, test_msg2, read)) {
+    ctx->result = 8;
+    return NULL;
+  }
+  
   ctx->result = 0;
   return NULL;
 }
