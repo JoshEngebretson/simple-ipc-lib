@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "os_includes.h"
+#include "pipe_unix.h"
 
 /////////////////////////////////////////////////////////////////////////////////////////
 // Test the Raw Pipe, since pipe operations are blocking, this requires two threads.
@@ -25,18 +26,29 @@ const wchar_t kPipeName[] = L"QWERTY1234";
 const char test_msg1[] = "0abcd10abcd10abcd10abcd10abcd10abcd10abcd10abcd10abcd10abcd1";
 const char test_msg2[] = "3xyz";
 
-void* RawClientPipeThread(void* ctx) {
-  PipeUnix pipe;
-  pipe.OpenClient(static_cast<int>(ctx));
+struct Context {
+  int fd;
+  int result;
+};
 
-  if (!pipe.Write(test_msg1, sizeof(test_msg1)))
-    return 2;
+void* RawClientPipeThread(void* p) {
+  volatile Context* ctx = reinterpret_cast<Context*> (p);
+  PipeUnix pipe;
+  pipe.OpenClient(ctx->fd);
+
+  if (!pipe.Write(test_msg1, sizeof(test_msg1))) {
+    ctx->result = 6;
+    return NULL;
+  }
 
   char msg_back[8] = {0};
   size_t read = sizeof(msg_back);
-  if (!pipe.Read(msg_back, &read))
-    return 2;
+  if (!pipe.Read(msg_back, &read)) {
+    ctx->result = 7;
+    return NULL;
+  }
 
+  ctx->result = 0;
   return NULL;
 }
 
@@ -44,9 +56,11 @@ int TestRawPipeTransport() {
   PipePair pipe_pair;
   PipeUnix pipe;
   pipe.OpenServer(pipe_pair.fd1());
+  
+  Context ctx = {pipe_pair.fd2(), 0};
 
   pthread_t thread;
-  if (pthread_create(&thread_, NULL, RawClientPipeThread, pipe_pair.fd2())) {
+  if (pthread_create(&thread, NULL, RawClientPipeThread, &ctx)) {
     return 1;
   }
 
@@ -68,8 +82,9 @@ int TestRawPipeTransport() {
 
   void* status;
   if (pthread_join(thread, &status)) {
-    return 3;
+    return 5;
   }
-  return 0;
+  
+  return ctx.result;
 }
 
