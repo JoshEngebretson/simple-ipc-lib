@@ -63,6 +63,13 @@ public:
 
 namespace  {
 
+#if !defined(WIN32)
+char* _i64toa_s(long long src, char *dest, size_t, int) {
+  sprintf(dest, "%ll", src);
+  return dest;
+}
+#endif
+
 // This class models the RPC server. 
 class SumMultOddRpcSvc : public DispTestMsg,
                          public ipc::MsgIn<28, SumMultOddRpcSvc, PipeChannel> {
@@ -95,14 +102,14 @@ public:
 private:
   // Some strange, non-sensical computation.
   const char* ComputeOddStuff(int x, int y) {
-    __int64 sum = x + __int64(y);
+    long long sum = x + long long(y);
     char buf[64] = {0};
     if (sum & 0x1) {
       // odd sum
       _i64toa_s(sum, buf, 64, 10);
     } else {
       // even sum
-      __int64 prod = x * __int64(y);
+      long long prod = x * long long(y);
       _i64toa_s(prod, buf, 64, 10);
     }
     temp_ += buf;
@@ -114,8 +121,6 @@ private:
   PipeTransport transport_;
 };
 
-#if 0  
-  
   
 // This class models the RPC client.
 class SumMultOddRpcClient : public DispTestMsg,
@@ -159,11 +164,8 @@ DWORD WINAPI SumMultOddRpcSvcThread(void* ctx) {
   return 0;
 }
   
-#endif
-
 }  // namespace.
 
-#if 0
 
 int TestFullRoundTrip() {
   // The server runs in a new thread and the client runs in the main thread.
@@ -195,4 +197,3 @@ int TestFullRoundTrip() {
   return 0;
 }
 
-#endif
