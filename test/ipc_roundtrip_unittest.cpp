@@ -102,14 +102,14 @@ public:
 private:
   // Some strange, non-sensical computation.
   const char* ComputeOddStuff(int x, int y) {
-    long long sum = x + long long(y);
+    long long sum = x + static_cast<long long> (y);
     char buf[64] = {0};
     if (sum & 0x1) {
       // odd sum
       _i64toa_s(sum, buf, 64, 10);
     } else {
       // even sum
-      long long prod = x * long long(y);
+      long long prod = x * static_cast<long long> (y);
       _i64toa_s(prod, buf, 64, 10);
     }
     temp_ += buf;
