@@ -109,3 +109,18 @@ bool PipeUnix::Read(void* buf, size_t* sz) {
   *sz = read;
   return true;
 }
+
+
+char* PipeTransport::Receive(size_t* size) {
+  if (buf_.size() < kBufferSz) {
+    buf_.resize(kBufferSz);
+  }
+  
+  *size = kBufferSz;
+  if (!Read(&buf_[0], size)) {
+    return NULL;
+  }
+  return &buf_[0];
+}
+
+

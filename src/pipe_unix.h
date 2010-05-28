@@ -46,4 +46,19 @@ private:
 };
 
 
+class PipeTransport : public PipeUnix {
+public:
+  static const size_t kBufferSz = 4096;
+  
+  size_t Send(const void* buf, size_t sz) {
+    return Write(buf, sz) ? 0 : -1;
+  }
+  
+  char* Receive(size_t* size);
+
+private:
+  std::vector<char> buf_;
+};
+
+
 #endif  // SIMPLE_IPC_PIPE_UNIX_H_
