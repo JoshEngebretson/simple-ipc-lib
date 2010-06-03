@@ -18,13 +18,12 @@
 /////////////////////////////////////////////////////////////////////////////////////////
 // Test the Raw Pipe, since pipe operations are blocking, this requires two threads.
 
-const wchar_t kPipeName[] = L"QWERTY1234";
 const char test_msg1[] = "0abcd10abcd10abcd10abcd10abcd10abcd10abcd10abcd10abcd10abcd1";
 const char test_msg2[] = "3xyz";
 
 DWORD WINAPI RawClientPipeThread(void* ctx) {
   PipeWin pipe;
-  while (!pipe.OpenClient(kPipeName)) {
+  while (!pipe.OpenClient(ctx)) {
     ::Sleep(50);
   }
   
@@ -40,12 +39,14 @@ DWORD WINAPI RawClientPipeThread(void* ctx) {
 }
 
 int TestRawPipeTransport() {
-  HANDLE thread = ::CreateThread(NULL, 0, RawClientPipeThread, NULL, 0, NULL);
+  PipePair ppair;
+
+  HANDLE thread = ::CreateThread(NULL, 0, RawClientPipeThread, ppair.fd2(), 0, NULL);
   if (NULL == thread)
     return 1;
 
   PipeWin pipe;
-  if (!pipe.OpenServer(kPipeName))
+  if (!pipe.OpenServer(ppair.fd1()))
     return 2;
 
   char msg[32];

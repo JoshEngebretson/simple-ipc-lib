@@ -17,22 +17,32 @@
 
 #include <vector>
 
+class PipePair {
+public:
+  PipePair();
+  
+  HANDLE fd1() const { return srv_; }
+  HANDLE fd2() const { return cln_; }
+  
+private:
+  HANDLE srv_;
+  HANDLE cln_;
+};
+
 class PipeWin {
 public:
   PipeWin();
   ~PipeWin();
 
-  bool OpenClient(const wchar_t* name);
-  bool OpenServer(const wchar_t* name);
+  bool OpenClient(HANDLE pipe);
+  bool OpenServer(HANDLE pipe);
 
   bool Write(const void* buf, size_t sz);
   bool Read(void* buf, size_t* sz);
 
-  DWORD GetClientPid() const { return client_; }
-  bool IsConnected() const { return 0 != client_; }
+  bool IsConnected() const { return INVALID_HANDLE_VALUE != pipe_; }
 
 private:
-  DWORD client_;
   HANDLE pipe_;
 };
 

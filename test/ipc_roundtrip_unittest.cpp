@@ -75,9 +75,9 @@ class SumMultOddRpcSvc : public DispTestMsg,
                          public ipc::MsgIn<28, SumMultOddRpcSvc, PipeChannel> {
 public:
   // The ctor blocks waiting for a client connection.
-  SumMultOddRpcSvc(const wchar_t* svc_name)
+  SumMultOddRpcSvc(const PipePair* pp)
     : channel_(&transport_) {
-    transport_.OpenServer(svc_name); 
+      transport_.OpenServer(pp->fd1()); 
   }
 
   // This call blocks waiting for client messages. When a message is received OnMsg() is invoked.
@@ -126,9 +126,9 @@ private:
 class SumMultOddRpcClient : public DispTestMsg,
                             public ipc::MsgIn<29, SumMultOddRpcClient, PipeChannel>  {
 public:
-  SumMultOddRpcClient(const wchar_t* server_name)
+  SumMultOddRpcClient(const PipePair* pp)
       : channel_(&transport_) {
-    transport_.OpenClient(server_name);
+        transport_.OpenClient(pp->fd2());
   }
 
   // Sends the RPC request to the server and waits for the answer.
@@ -159,7 +159,7 @@ private:
 };
 
 DWORD WINAPI SumMultOddRpcSvcThread(void* ctx) {
-  SumMultOddRpcSvc svc(L"SumMultServerTest");
+  SumMultOddRpcSvc svc(reinterpret_cast<const PipePair*>(ctx));
   svc.Loop();
   return 0;
 }
@@ -168,10 +168,11 @@ DWORD WINAPI SumMultOddRpcSvcThread(void* ctx) {
 
 
 int TestFullRoundTrip() {
+  PipePair pp;
   // The server runs in a new thread and the client runs in the main thread.
-  HANDLE thread = ::CreateThread(NULL, 0, SumMultOddRpcSvcThread, NULL, 0, NULL);
+  HANDLE thread = ::CreateThread(NULL, 0, SumMultOddRpcSvcThread, &pp, 0, NULL);
   ::Sleep(60);
-  SumMultOddRpcClient client(L"SumMultServerTest");
+  SumMultOddRpcClient client(&pp);
 
   std::string ans;
   volatile DWORD gtc = ::GetTickCount();

@@ -335,6 +335,13 @@
 			<File
 				RelativePath="..\..\..\test\ipc_roundtrip_unittest.cpp"
 				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+					/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\..\..\test\ipc_test_helpers.h"

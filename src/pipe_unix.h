@@ -39,7 +39,7 @@ public:
   bool Write(const void* buf, size_t sz);
   bool Read(void* buf, size_t* sz);
 
-  bool IsConnected() const { return false; }
+  bool IsConnected() const { return fd_ != -1; }
 
 private:
   int fd_;

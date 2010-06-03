@@ -19,78 +19,85 @@
 
 namespace {
 const wchar_t kPipePrefix[] = L"\\\\.\\pipe\\";
+const int kPipeBufferSz = 4 * 1024;
+
+LONG g_pipe_seq = 0;
+
+HANDLE OpenPipeServer(const wchar_t* name) {
+  std::wstring pipename(kPipePrefix);
+  pipename += name;
+  return ::CreateNamedPipeW(pipename.c_str(), PIPE_ACCESS_DUPLEX,
+                            PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_WAIT,
+                            1, kPipeBufferSz, kPipeBufferSz, 200, NULL);
 }
 
-PipeWin::PipeWin() : pipe_(INVALID_HANDLE_VALUE), client_(0) {
-}
-
-PipeWin::~PipeWin() {
-  if (client_)
-    ::DisconnectNamedPipe(pipe_);
-  if (pipe_ != INVALID_HANDLE_VALUE)
-    ::CloseHandle(pipe_);
-}
-
-bool PipeWin::OpenClient(const wchar_t* name) {
+HANDLE OpenPipeClient(const wchar_t* name) {
   std::wstring pipename(kPipePrefix);
   pipename += name;
   while (true) {
-    pipe_ = ::CreateFileW(pipename.c_str(), GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING,
-                          SECURITY_SQOS_PRESENT | SECURITY_IDENTIFICATION, NULL);
-    if (INVALID_HANDLE_VALUE == pipe_) {
-      if (ERROR_PIPE_BUSY != ::GetLastError())
-        return false;
-      ::Sleep(20);
+    HANDLE pipe = ::CreateFileW(pipename.c_str(), GENERIC_READ | GENERIC_WRITE, 0, NULL,
+                                OPEN_EXISTING, SECURITY_SQOS_PRESENT | SECURITY_IDENTIFICATION, NULL);
+    if (INVALID_HANDLE_VALUE == pipe) {
+      if (ERROR_PIPE_BUSY != ::GetLastError()) {
+        return pipe;
+      }
+      // wait and retry.
+      ::Sleep(25);
     } else {
-      break;
+      // success.
+      return pipe;
     }
-  };
-  
-  DWORD pid = ::GetCurrentProcessId();
-  char hello[8] = {'H', 'E', 'L', '0', 
-                   (pid >> 0x00) & 0x000000ff,
-                   (pid >> 0x08) & 0x000000ff,
-                   (pid >> 0x10) & 0x000000ff,
-                   (pid >> 0x18) & 0x000000ff };
+  }
+}
 
-  DWORD written = 0;
-  if (!::WriteFile(pipe_, hello, sizeof(hello), &written, NULL))
-    return false;
-  if (sizeof(hello) != written)
-    return false;
+}  // namespace
 
-  ::FlushFileBuffers(pipe_);
-  client_ = -1;
+
+PipePair::PipePair() : srv_(NULL), cln_(NULL) {
+  // Come up with a reasonable unique name.
+  const wchar_t kPipePattern[] = L"ko.%x.%x.%x";
+  wchar_t name[8*3 + sizeof(kPipePattern)];
+  ::InterlockedIncrement(&g_pipe_seq);
+  ::wsprintfW(name, kPipePattern, ::GetCurrentProcessId(), ::GetTickCount(), g_pipe_seq);
+  HANDLE server = OpenPipeServer(name);
+  if (INVALID_HANDLE_VALUE == server) {
+    return;
+  }
+  HANDLE client = OpenPipeClient(name);
+  if (INVALID_HANDLE_VALUE == client) {
+    ::CloseHandle(server);
+    return;
+  }
+  if (!::ConnectNamedPipe(server, NULL)) {
+    if (ERROR_PIPE_CONNECTED != ::GetLastError()) {
+      ::CloseHandle(server);
+      ::CloseHandle(client);
+    return;
+    }
+  }
+
+  srv_ = server;
+  cln_ = client;
+}
+
+
+PipeWin::PipeWin() : pipe_(INVALID_HANDLE_VALUE) {
+}
+
+PipeWin::~PipeWin() {
+  if (pipe_ != INVALID_HANDLE_VALUE) {
+    ::DisconnectNamedPipe(pipe_);  // $$$ disconect is valid on the server side.
+    ::CloseHandle(pipe_);
+  }
+}
+
+bool PipeWin::OpenClient(HANDLE pipe) {
+  pipe_ = pipe;  
   return true;
 }
 
-bool PipeWin::OpenServer(const wchar_t* name) {
-  std::wstring pipename(kPipePrefix);
-  pipename += name;
-  pipe_ = ::CreateNamedPipeW(pipename.c_str(), PIPE_ACCESS_DUPLEX,
-                             PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_WAIT,
-                             PIPE_UNLIMITED_INSTANCES, 4 * 1024, 4 * 1024, 200, NULL);
-
-  if (INVALID_HANDLE_VALUE == pipe_)
-    return false;
-  if (!::ConnectNamedPipe(pipe_, NULL))
-    return false;
-
-  char hello[8] = {0};
-  DWORD read = 0;
-  if (!::ReadFile(pipe_, hello, sizeof(hello), &read, NULL))
-    return false;
-
-  if ((sizeof(hello) != read) || (0 != memcmp(hello, "HEL0", 4))) {
-    ::DisconnectNamedPipe(pipe_);
-    return false;
-  }
-
-  client_ = hello[4] << 0x00 | 
-            hello[5] << 0x08 |
-            hello[6] << 0x10 |
-            hello[7] << 0x18;
-
+bool PipeWin::OpenServer(HANDLE pipe) {
+  pipe_ = pipe;
   return true;
 }
 
