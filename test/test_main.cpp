@@ -52,12 +52,7 @@ int TestCodecRaw5();
 int TestForwardDispatch();
 int TestDispatchRoundTrip();
 int TestRawPipeTransport();
-
-#if defined(WIN32)
 int TestFullRoundTrip();
-#else
-int TestFullRoundTrip() { return 0; }
-#endif
 
 #if defined(WIN32)
 int wmain(int argc, wchar_t* argv[]) {

@@ -19,6 +19,7 @@
 #if defined(WIN32)
 #include "pipe_win.h"
 #else
+#include <pthread.h>
 #include "pipe_unix.h"
 #endif
 
@@ -34,6 +35,19 @@
 //
 // Note that there is no routing or multi-client code, there is only one connection and only one
 // client.
+
+
+#if defined(WIN32)
+#define TH_RETURN DWORD
+#else
+#define TH_RETURN void*
+#define WINAPI 
+
+char* _i64toa_s(long long src, char *dest, size_t, int) {
+  sprintf(dest, "%lld", src);
+  return dest;
+}
+#endif
 
 
 typedef ipc::Channel<PipeTransport, ipc::Encoder, ipc::Decoder> PipeChannel;
@@ -62,13 +76,6 @@ public:
 };
 
 namespace  {
-
-#if !defined(WIN32)
-char* _i64toa_s(long long src, char *dest, size_t, int) {
-  sprintf(dest, "%ll", src);
-  return dest;
-}
-#endif
 
 // This class models the RPC server. 
 class SumMultOddRpcSvc : public DispTestMsg,
@@ -158,7 +165,7 @@ private:
   PipeTransport transport_;
 };
 
-DWORD WINAPI SumMultOddRpcSvcThread(void* ctx) {
+TH_RETURN WINAPI SumMultOddRpcSvcThread(void* ctx) {
   SumMultOddRpcSvc svc(reinterpret_cast<const PipePair*>(ctx));
   svc.Loop();
   return 0;
@@ -169,13 +176,21 @@ DWORD WINAPI SumMultOddRpcSvcThread(void* ctx) {
 
 int TestFullRoundTrip() {
   PipePair pp;
+
+#if defined(WIN32)
   // The server runs in a new thread and the client runs in the main thread.
   HANDLE thread = ::CreateThread(NULL, 0, SumMultOddRpcSvcThread, &pp, 0, NULL);
   ::Sleep(60);
+#else
+  pthread_t thread;
+  if (pthread_create(&thread, NULL, SumMultOddRpcSvcThread, &pp)) {
+    return 1;
+  }  
+#endif
   SumMultOddRpcClient client(&pp);
 
   std::string ans;
-  volatile DWORD gtc = ::GetTickCount();
+//$$  volatile DWORD gtc = ::GetTickCount();
 
   for (int ix = 0; ix != 1000; ++ix) {
     if (!client.Call(123546, 567890, &ans))
@@ -194,7 +209,8 @@ int TestFullRoundTrip() {
 
   // Measure the speed of the IPC. In my Z600 Win7 it clocks 156ms for 3*1000 messages
   // which comes about 50uS each which gives you 25uS each way.
-  gtc = ::GetTickCount() - gtc;
+  
+//$$  gtc = ::GetTickCount() - gtc;
   return 0;
 }
 
