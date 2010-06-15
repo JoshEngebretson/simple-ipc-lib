@@ -14,11 +14,46 @@
 
 #include "winheaders.h"
 #include "sample1.h"
+#include "broker_worker.h"
 
-int __stdcall wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmdline, int nshow) {
-  if (!CreateMainWindow(instance, nshow)) {
+#include <map>
+
+const wchar_t kWorkerCmdline[] = L"--worker";
+
+int __stdcall wWinMain(HINSTANCE instance, HINSTANCE, wchar_t*, int) {
+  // The process can be either the broker or the child worker
+  const wchar_t* cmdline = ::GetCommandLineW();
+  if (wcsstr(cmdline, kWorkerCmdline)) {
+    return WorkerMain(cmdline);
+  } else {
+    return BrokerMain(instance, cmdline);
+  }
+}
+
+int WorkerMain(const wchar_t* cmdline) {
+ ::MessageBoxW(NULL, L"worker process", L"sample1", MB_OK);
+
+  Worker worker;
+  if (!worker.ConnectToBroker(::GetCommandLineW())) {
+    return 1;
+  }
+  for (int ix = 0; ix != 1000; ++ix) {
+    worker.WriteFileStr("01234567899876543210\n");
+    ::Sleep(20);
+  }
+  ::MessageBoxW(NULL, L"worker exit", L"sample1", MB_OK);
+  return 0;
+}
+
+int BrokerMain(HINSTANCE instance, const wchar_t* cmdline) {
+  HWND win = CreateMainWindow(instance);
+  if (!win) {
     return -1;
   }
+  Broker broker(win);
+  broker.SetPolicy(Broker::FILES, true);
+  broker.SpawnWorker(kWorkerCmdline);
+
   MSG msg = {0};
   while (::GetMessageW(&msg, NULL, 0, 0)) {
     ::TranslateMessage(&msg);
@@ -27,9 +62,8 @@ int __stdcall wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmdline, int nsho
 	return (int) msg.wParam;
 }
 
-
-bool CreateMainWindow(HINSTANCE instance, int nshow) {
-  const wchar_t kWinClass[] = L"ipc.sample1.tp1";
+HWND CreateMainWindow(HINSTANCE instance) {
+  const wchar_t kWinClass[] = L"ipc.sample1.tw1";
 
 	WNDCLASSEX wcex;
 	wcex.cbSize = sizeof(WNDCLASSEX);
@@ -49,11 +83,12 @@ bool CreateMainWindow(HINSTANCE instance, int nshow) {
                                 WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, 0, 500, 500,
                                 NULL, NULL, instance, NULL);
    if (!window) {
-      return false;
+      return NULL;
    }
-   ::ShowWindow(window, nshow);
+
+   ::ShowWindow(window, SW_SHOWDEFAULT);
    ::UpdateWindow(window);
-   return true;
+   return window;
 }
 
 void PaintMainWindow(HDC dc, PAINTSTRUCT* ps) {

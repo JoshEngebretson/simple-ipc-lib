@@ -46,6 +46,12 @@ public:
     }
   }
 
+  // This function is meant simplify the scope specifier when calling OnMsgIn.
+  // We use it when we have to override OnMsgIn and we need to call the original. 
+  size_t OnMsgInX(int msg_id, ChannelT* ch, const WireType* const args[], int count) {
+    return OnMsgIn(msg_id, ch, args, count);
+  }
+
   DerivedT* MsgHandler(int msg_id) {
     return (MsgId == msg_id) ? static_cast<DerivedT*>(this) : NULL;
   }

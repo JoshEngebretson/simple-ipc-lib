@@ -113,8 +113,16 @@ class Channel {
       args[ix] = &handler.GetArg(ix);
     }
 
-    DispatchT* dispatch = top_dispatch->MsgHandler(handler.MsgId());
-    return dispatch ? dispatch->OnMsgIn(handler.MsgId(), this, args, np) : -3;
+    return top_dispatch->MsgHandler(handler.MsgId())->OnMsgIn(handler.MsgId(), this, args, np);
+  }
+
+  // $$ for testing only. Remove it a some point.
+  template <class DispatchT>
+  size_t ReceiveLocal(DispatchT* top_dispatch, int msg_id) {
+    WireType a(int(1));
+    WireType b(int(2));
+    const WireType* args[2] = {&a, &b};
+    return top_dispatch->MsgHandler(msg_id)->OnMsgIn(msg_id, this, args, 2);
   }
 
   // This class is using during receiving as the callback handler for the decoder.

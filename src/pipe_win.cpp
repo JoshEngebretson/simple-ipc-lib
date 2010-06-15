@@ -31,11 +31,13 @@ HANDLE OpenPipeServer(const wchar_t* name) {
                             1, kPipeBufferSz, kPipeBufferSz, 200, NULL);
 }
 
-HANDLE OpenPipeClient(const wchar_t* name) {
+HANDLE OpenPipeClient(const wchar_t* name, bool inherit) {
   std::wstring pipename(kPipePrefix);
   pipename += name;
+
+  SECURITY_ATTRIBUTES sa = {sizeof(sa), NULL, inherit ? TRUE : FALSE};
   while (true) {
-    HANDLE pipe = ::CreateFileW(pipename.c_str(), GENERIC_READ | GENERIC_WRITE, 0, NULL,
+    HANDLE pipe = ::CreateFileW(pipename.c_str(), GENERIC_READ | GENERIC_WRITE, 0, &sa,
                                 OPEN_EXISTING, SECURITY_SQOS_PRESENT | SECURITY_IDENTIFICATION, NULL);
     if (INVALID_HANDLE_VALUE == pipe) {
       if (ERROR_PIPE_BUSY != ::GetLastError()) {
@@ -53,7 +55,7 @@ HANDLE OpenPipeClient(const wchar_t* name) {
 }  // namespace
 
 
-PipePair::PipePair() : srv_(NULL), cln_(NULL) {
+PipePair::PipePair(bool inherit_fd2) : srv_(NULL), cln_(NULL) {
   // Come up with a reasonable unique name.
   const wchar_t kPipePattern[] = L"ko.%x.%x.%x";
   wchar_t name[8*3 + sizeof(kPipePattern)];
@@ -63,7 +65,7 @@ PipePair::PipePair() : srv_(NULL), cln_(NULL) {
   if (INVALID_HANDLE_VALUE == server) {
     return;
   }
-  HANDLE client = OpenPipeClient(name);
+  HANDLE client = OpenPipeClient(name, inherit_fd2);
   if (INVALID_HANDLE_VALUE == client) {
     ::CloseHandle(server);
     return;

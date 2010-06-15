@@ -16,6 +16,10 @@
 
 #include "resource.h"
 
-bool CreateMainWindow(HINSTANCE instance, int nshow);
+int WorkerMain(const wchar_t* cmdline);
+
+int BrokerMain(HINSTANCE instance, const wchar_t* cmdline);
+
+HWND CreateMainWindow(HINSTANCE instance);
 
 LRESULT __stdcall WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);

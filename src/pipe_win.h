@@ -19,7 +19,7 @@
 
 class PipePair {
 public:
-  PipePair();
+  PipePair(bool inherit_fd2 = false);
   
   HANDLE fd1() const { return srv_; }
   HANDLE fd2() const { return cln_; }
