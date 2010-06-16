@@ -38,6 +38,8 @@ public:
 
   void LogCall(PolicyArea pa);
 
+  long GetNumCallsPerArea(PolicyArea pa);
+
 private:
   struct Context {
     Broker* me;

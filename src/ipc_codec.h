@@ -159,16 +159,16 @@ private:
 template <typename HandlerT>
 class Decoder {
 public:
-  Decoder(HandlerT* handler)
-      : handler_(handler),
-        state_(DEC_S_START),
-        e_count_(-1),
-        d_count_(-1),
-        next_char_(0) {
+  Decoder(HandlerT* handler) : handler_(handler) {
+    Reset();
   }
 
   bool OnData(const char* buff, size_t sz) {
-    data_.insert(data_.end(), buff, buff + sz);
+    if (buff) {
+      data_.insert(data_.end(), buff, buff + sz);
+    } else if (!data_.size()) {
+      return true;
+    }
     if (data_.size() % sizeof(void*) == 0) {
       Result res;
       do {
@@ -180,6 +180,15 @@ public:
   }
 
   bool Success() { return state_ == DEC_S_DONE; }
+
+  bool DoneWithBuffer() const { return data_.size() == 0; }
+
+  void Reset() {
+    state_ = DEC_S_START;
+    e_count_ = -1;
+    d_count_ = -1;
+    next_char_ = 0;
+  }
 
 private:
   enum State {
@@ -296,7 +305,8 @@ private:
     int it0 = ReadNextInt();
     if (Encoder::ENC_ENDDAT != it0)
       return DEC_ERROR;
-    data_.clear();
+
+    data_.erase(data_.begin(), data_.begin() + next_char_);
     state_ = DEC_S_DONE;
     return DEC_DONE;
   }

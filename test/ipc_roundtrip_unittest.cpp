@@ -145,7 +145,7 @@ public:
     SumMultOddSendM28 msg;
     if (msg.Send(&channel_, x, y) != 0)
       return false;
-    if (channel_.Receive(this) != 0)
+    if (channel_.Receive(this) != 3)
       return false;
     answer->swap(ans_);
     return true;
@@ -156,7 +156,7 @@ public:
     if (!ans)
       return -1;
     ans_ = ans;
-    return 0;
+    return 3;
   }
 
 private:

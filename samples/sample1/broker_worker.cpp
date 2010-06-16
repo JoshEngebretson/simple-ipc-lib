@@ -190,6 +190,10 @@ void Broker::LogCall(Broker::PolicyArea pa) {
   ::InterlockedIncrement(&calls_);
 }
 
+long Broker::GetNumCallsPerArea(Broker::PolicyArea pa) {
+  return calls_;
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////
 
 

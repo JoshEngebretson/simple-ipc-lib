@@ -93,27 +93,44 @@ class Channel {
   // value of |top_dispatch|.
   template <class DispatchT>
   size_t Receive(DispatchT* top_dispatch) {
+
     RxHandler handler;
     DecoderT<RxHandler> decoder(&handler);
-    size_t received = 0;
-    const char* buf = NULL;
+
+    // There are two do/while nested loops. The inner one runs until a full message
+    // has been decoded and the outer one runs until a dispatcher returns anything
+    // but a 0. The inner loop has two modes, in one it requires more external data
+    // and in the other it can keep processing what has been read so far. They are
+    // required to handle the case of reading less than a full message and when
+    // reading more than one message.
+    size_t retv = 0;
     do {
-      buf = transport_->Receive(&received);
-    } while (decoder.OnData(buf, received));
+      size_t received = 0;
+       const char* buf = NULL;
+      do {
+        buf = decoder.DoneWithBuffer()? transport_->Receive(&received) : NULL;
+      } while (decoder.OnData(buf, received));
 
-    if(!decoder.Success())
-      return -1;
+      if(!decoder.Success())
+        return -1;
 
-    size_t np = handler.GetArgCount();
-    if (np > kMaxNumArgs)
-      return -2;
+      size_t np = handler.GetArgCount();
+      if (np > kMaxNumArgs)
+        return -2;
 
-    const WireType* args[kMaxNumArgs];
-    for (size_t ix = 0; ix != np; ++ix) {
-      args[ix] = &handler.GetArg(ix);
-    }
+      const WireType* args[kMaxNumArgs];
+      for (size_t ix = 0; ix != np; ++ix) {
+        args[ix] = &handler.GetArg(ix);
+      }
 
-    return top_dispatch->MsgHandler(handler.MsgId())->OnMsgIn(handler.MsgId(), this, args, np);
+      // Got one message. Now dispatch it.
+      retv = top_dispatch->MsgHandler(handler.MsgId())->OnMsgIn(handler.MsgId(), this, args, np);
+
+      handler.Clear();
+      decoder.Reset();
+    } while(0 == retv);
+
+    return retv;
   }
 
   // $$ for testing only. Remove it a some point.
@@ -205,6 +222,11 @@ class Channel {
     }
 
     size_t GetArgCount() const { return list_.size(); }
+
+    void Clear() {
+      list_.clear();
+      msg_id_ = -1;
+    }
 
   private:
     typedef std::vector<WireType> RxList;

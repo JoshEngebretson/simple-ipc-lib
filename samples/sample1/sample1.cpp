@@ -20,6 +20,8 @@
 
 const wchar_t kWorkerCmdline[] = L"--worker";
 
+Broker* g_broker = NULL;
+
 int __stdcall wWinMain(HINSTANCE instance, HINSTANCE, wchar_t*, int) {
   // The process can be either the broker or the child worker
   const wchar_t* cmdline = ::GetCommandLineW();
@@ -37,9 +39,9 @@ int WorkerMain(const wchar_t* cmdline) {
   if (!worker.ConnectToBroker(::GetCommandLineW())) {
     return 1;
   }
-  for (int ix = 0; ix != 1000; ++ix) {
+  for (int ix = 0; ix != 3000; ++ix) {
     worker.WriteFileStr("01234567899876543210\n");
-    ::Sleep(20);
+    ::Sleep(5);
   }
   ::MessageBoxW(NULL, L"worker exit", L"sample1", MB_OK);
   return 0;
@@ -53,12 +55,14 @@ int BrokerMain(HINSTANCE instance, const wchar_t* cmdline) {
   Broker broker(win);
   broker.SetPolicy(Broker::FILES, true);
   broker.SpawnWorker(kWorkerCmdline);
+  g_broker = &broker;
 
   MSG msg = {0};
   while (::GetMessageW(&msg, NULL, 0, 0)) {
     ::TranslateMessage(&msg);
     ::DispatchMessageW(&msg);
 	}
+
 	return (int) msg.wParam;
 }
 
@@ -88,6 +92,8 @@ HWND CreateMainWindow(HINSTANCE instance) {
 
    ::ShowWindow(window, SW_SHOWDEFAULT);
    ::UpdateWindow(window);
+
+   ::SetTimer(window, 7, 2000, NULL);
    return window;
 }
 
@@ -95,6 +101,12 @@ void PaintMainWindow(HDC dc, PAINTSTRUCT* ps) {
   ::SelectObject(dc, GetStockObject(DC_BRUSH));    
   ::SetDCBrushColor(dc, RGB(255,0,0));
   ::Rectangle(dc, 5, 4, 400, 300);
+  
+  wchar_t buf[256];
+  ::wsprintfW(buf, L"worker file calls : %ld", g_broker->GetNumCallsPerArea(Broker::FILES));
+  RECT rect = {20, 20, 200, 200};
+  ::SetBkMode(dc, TRANSPARENT);
+  ::DrawTextW(dc, buf, -1, &rect, DT_SINGLELINE);
 }
 
 LRESULT __stdcall WndProc(HWND window, UINT message, WPARAM wparam, LPARAM lparam) {
@@ -115,8 +127,12 @@ LRESULT __stdcall WndProc(HWND window, UINT message, WPARAM wparam, LPARAM lpara
       ::EndPaint(window, &ps);
       break;
 	  case WM_DESTROY:
+      ::KillTimer(window, 7);
       ::PostQuitMessage(0);
 		  break;
+    case WM_TIMER:
+      ::InvalidateRect(window, NULL, true);
+      break;
 	  default:
       return ::DefWindowProc(window, message, wparam, lparam);
 	}
