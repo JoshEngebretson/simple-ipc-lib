@@ -68,7 +68,7 @@ class Channel {
 
   // Sends the message (|args| + msg_id) to the other end of the connected
   // |transport| passed to the constructor. This call can block or not depending
-  // pn the transport implementation.
+  // on the transport implementation.
   size_t Send(int msg_id, const WireType* const args[], int n_args)  {
     EncoderT encoder;
     encoder.Open(n_args);
@@ -108,7 +108,7 @@ class Channel {
       size_t received = 0;
        const char* buf = NULL;
       do {
-        buf = decoder.DoneWithBuffer()? transport_->Receive(&received) : NULL;
+        buf = decoder.NeedsMoreData()? transport_->Receive(&received) : NULL;
       } while (decoder.OnData(buf, received));
 
       if(!decoder.Success())

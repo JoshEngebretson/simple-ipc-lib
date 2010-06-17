@@ -13,6 +13,8 @@
 // limitations under the License.
 
 #include <map>
+#include <string>
+
 #include "winheaders.h"
 
 #include "..\..\src\ipc_channel.h"
@@ -63,7 +65,7 @@ class Worker {
 public:
   bool ConnectToBroker(const wchar_t* cmdline);
 
-  bool WriteFileStr(const char* str);
+  bool WriteFileStr(const std::string& str);
 
 private:
   PipeTransport transport_;

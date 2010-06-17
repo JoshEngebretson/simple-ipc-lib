@@ -159,22 +159,23 @@ class WireType : public MultiType {
   }
 
   const char* RecoverString8() const {
-    if (Id() == ipc::TYPE_STRING8) 
-      return store_str8.c_str(); 
-    else if (Id() == ipc::TYPE_NULLSTRING8)
-      return NULL;
+    if (Id() == ipc::TYPE_STRING8) return store_str8.c_str(); 
+    else if (Id() == ipc::TYPE_NULLSTRING8) return NULL;
     else throw int(ipc::TYPE_STRING8);
   }
   
   const wchar_t* RecoverString16() const {
-    if (Id() == ipc::TYPE_STRING16) 
-      return store_str16.c_str(); 
-    else if (Id() == ipc::TYPE_NULLSTRING16)
-      return NULL;
+    if (Id() == ipc::TYPE_STRING16) return store_str16.c_str(); 
+    else if (Id() == ipc::TYPE_NULLSTRING16) return NULL;
     else throw int(ipc::TYPE_STRING16);
   }
 
   //$$ todo recover buffer type
+  const ByteArray RecoverByteArray() const {
+    if (Id() == ipc::TYPE_BARRAY) return ByteArray(store_str8.size(), store_str8.data());
+    else if (Id() == ipc::TYPE_NULLBARRAY) return ByteArray(0, NULL);
+    else throw int(ipc::TYPE_BARRAY);
+  }
 
  private:
   void Set(int v) { store.v_int = v; }

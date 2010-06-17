@@ -40,7 +40,7 @@ int WorkerMain(const wchar_t* cmdline) {
     return 1;
   }
   for (int ix = 0; ix != 3000; ++ix) {
-    worker.WriteFileStr("01234567899876543210\n");
+    worker.WriteFileStr("x01234567899876543210");
     ::Sleep(5);
   }
   ::MessageBoxW(NULL, L"worker exit", L"sample1", MB_OK);

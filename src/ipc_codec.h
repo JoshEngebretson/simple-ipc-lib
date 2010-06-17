@@ -170,27 +170,30 @@ public:
       return true;
     }
     if (data_.size() % sizeof(void*) == 0) {
-      Result res;
-      do {
-        res = Decode();
-      } while (DEC_LOOPAGAIN == res);
-      return (res == DEC_MOREDATA);
+      return (RunDecoder() == DEC_MOREDATA);
     }
     return true;
   }
 
   bool Success() { return state_ == DEC_S_DONE; }
 
-  bool DoneWithBuffer() const { return data_.size() == 0; }
+  bool NeedsMoreData() const {
+    return (data_.size() == 0) || (res_ == DEC_MOREDATA); 
+  }
 
   void Reset() {
     state_ = DEC_S_START;
     e_count_ = -1;
     d_count_ = -1;
     next_char_ = 0;
+    res_ = DEC_NONE;
   }
 
 private:
+  // States of the decoder state machine, for a single message
+  // they are basically traveled from the first to the last and
+  // there is no state that means 'error'. When an error happens
+  // the state machine stops at the state that caused it.
   enum State {
     DEC_S_START,
     DEC_S_HEADSZ,
@@ -199,14 +202,27 @@ private:
     DEC_S_DONE
   };
 
+  // The possible results of running one step on the state machine.
+  // DEC_LOOPAGAIN causes the state machine to be spin up one more
+  // time while the others cause it to return to the caller so
+  // it can provide more data, handle a decoding error or process
+  // a ready message.
   enum Result {
+    DEC_NONE,
     DEC_LOOPAGAIN,
     DEC_MOREDATA,
     DEC_DONE,
     DEC_ERROR
   };
 
-  Result Decode() {
+  Result RunDecoder() {
+    do {
+      res_ = DecodeStep();
+    } while (DEC_LOOPAGAIN == res_);
+    return res_;
+  }
+
+  Result DecodeStep() {
     switch(state_) {
       case DEC_S_START: return StateStart();
       case DEC_S_HEADSZ: return StateHeader();
@@ -262,7 +278,7 @@ private:
       return DEC_MOREDATA;
     }
     // We got data to process. Each datum, even null strings
-    // takes at least 4 bytes.
+    // take at least 4 bytes.
     if (d_count_ < items_.size())
       return DEC_ERROR;
 
@@ -371,6 +387,7 @@ private:
   int e_count_;
   size_t d_count_;
   int next_char_;
+  Result res_;
 };
 
 

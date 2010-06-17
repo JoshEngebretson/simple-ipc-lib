@@ -42,13 +42,13 @@ public:
 
 DEFINE_IPC_MSG_CONV(4, 2) {
   IPC_MSG_P1(const wchar_t*, String16)
-  IPC_MSG_P2(const char*, String8)
+    IPC_MSG_P2(ipc::ByteArray, ByteArray)
 };
 
 class WriteFileMsgSend : public ipc::MsgOut<PipeChannel> {
 public:
-  size_t Send(PipeChannel* ch, const wchar_t* fname, const char* str) {
-    return SendMsg(4, ch, fname, str);
+  size_t Send(PipeChannel* ch, const wchar_t* fname, const char* buf, const size_t sz) {
+    return SendMsg(4, ch, fname, ipc::ByteArray(sz, buf));
   }
 };
 
@@ -61,7 +61,7 @@ public:
     return OnMsgInX(msg_id, ch, args, count);
   }
 
-  size_t OnMsg(PipeChannel*, const wchar_t* fname, const char* str) {
+  size_t OnMsg(PipeChannel*, const wchar_t* fname, const ipc::ByteArray& ba) {
     if (!broker_->QueryPolicy(Broker::FILES)) {
       return 0;
     }
@@ -213,8 +213,8 @@ bool Worker::ConnectToBroker(const wchar_t *cmdline) {
   return true;
 }
 
-bool Worker::WriteFileStr(const char *str) {
+bool Worker::WriteFileStr(const std::string& str) {
   PipeChannel channel(&transport_);
   WriteFileMsgSend msg;
-  return (0 == msg.Send(&channel, L"file_one.txt", str));
+  return (0 == msg.Send(&channel, L"file_one.txt", str.data(), str.size()));
 }
