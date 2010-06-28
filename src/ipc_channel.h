@@ -63,7 +63,7 @@ namespace ipc {
 template <class TransportT, class EncoderT, template <class> class DecoderT>
 class Channel {
  public:
-  static const size_t kMaxNumArgs = 8;
+  static const size_t kMaxNumArgs = 10;
   Channel(TransportT* transport) : transport_(transport) {}
 
   // Sends the message (|args| + msg_id) to the other end of the connected
@@ -108,15 +108,23 @@ class Channel {
       size_t received = 0;
        const char* buf = NULL;
       do {
-        buf = decoder.NeedsMoreData()? transport_->Receive(&received) : NULL;
+        if (decoder.NeedsMoreData()) {
+          buf = transport_->Receive(&received);
+          if (!buf) {
+            // read failed.
+            return static_cast<size_t>(-1);
+          }
+        } else {
+          buf = NULL;
+        }
       } while (decoder.OnData(buf, received));
 
       if(!decoder.Success())
-        return static_cast<size_t>(-1);
+        return static_cast<size_t>(-2);
 
       size_t np = handler.GetArgCount();
       if (np > kMaxNumArgs)
-        return static_cast<size_t>(-2);
+        return static_cast<size_t>(-3);
 
       const WireType* args[kMaxNumArgs];
       for (size_t ix = 0; ix != np; ++ix) {

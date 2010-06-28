@@ -17,16 +17,29 @@
 
 #include "ipc_wire_types.h"
 
+// The two classes in this file ipc::MsgIn and ipc::MsgOut are nice wrappers to
+// the two common tasks of sending a message and receiving a message. They are
+// not required but highly recomended.
+
 // This templated class will be specialized for each message id. This
 // can be done explicitly or via the DEFINE_IPC_MSG_CONV macros.
 template<int MsgId>
 class MsgParamConverter;
 
 namespace ipc {
-
+//
+// Receives a message with id=|MsgId| and calls the appropiate overload of
+// OnMsg on the derived |DerivedT| class. To use this class you need to define
+// the format of the message using DEFINE_IPC_MSG_CONV or creating the specific
+// overload of MsgParamConverter<MsgId> by hand.
+//
 template <int MsgId, class DerivedT, typename ChannelT>
 class MsgIn {
 public:
+  // Int2Type is a handy template that given an integer generates a unique type. It is
+  // used to dispatch a message to the right overload of DispatchImpl based on the
+  // number of parameters without having to use printf-style elipsis calling which
+  // loses the original type.
   template <int v> struct Int2Type {
     enum { value = v };
   };
@@ -100,9 +113,23 @@ protected:
                                                PC(args[6]).p6(), PC(args[7]).p7());
   }
 
+  size_t DispatchImpl(const Int2Type<9>&, ChannelT* ch, const WireType* const args[]) {
+    return static_cast<DerivedT*>(this)->OnMsg(ch, PC(args[0]).p0(), PC(args[1]).p1(), PC(args[2]).p2(),
+                                               PC(args[3]).p3(), PC(args[4]).p4(), PC(args[5]).p5(),
+                                               PC(args[6]).p6(), PC(args[7]).p7(), PC(args[8]).p8());
+  }
+
+  size_t DispatchImpl(const Int2Type<10>&, ChannelT* ch, const WireType* const args[]) {
+    return static_cast<DerivedT*>(this)->OnMsg(ch, PC(args[0]).p0(), PC(args[1]).p1(), PC(args[2]).p2(),
+                                               PC(args[3]).p3(), PC(args[4]).p4(), PC(args[5]).p5(),
+                                               PC(args[6]).p6(), PC(args[7]).p7(), PC(args[8]).p8()
+                                               PC(args[9]).p9());
+  }
+
 };
 
-
+// Sends a message with id=|msg_id|. Basically wraps the tedious task of creating the
+// appropiate WireType array and calling the channel::Send with the correct number of params.
 template <typename ChannelT>
 class MsgOut {
  protected:
@@ -155,6 +182,20 @@ class MsgOut {
       const WireType& a7)  {
     const WireType* const args[] = { &a0, &a1, &a2, &a3, &a4, &a5, &a6, &a7 };
     return ch->Send(msg_id, args, 8);
+  }
+
+  size_t SendMsg(int msg_id, ChannelT* ch, const WireType& a0, const WireType& a1, const WireType& a2,
+      const WireType& a3, const WireType& a4, const WireType& a5, const WireType& a6,
+      const WireType& a7, const WireType& a8)  {
+    const WireType* const args[] = { &a0, &a1, &a2, &a3, &a4, &a5, &a6, &a7, &a8 };
+    return ch->Send(msg_id, args, 9);
+  }
+
+  size_t SendMsg(int msg_id, ChannelT* ch, const WireType& a0, const WireType& a1, const WireType& a2,
+      const WireType& a3, const WireType& a4, const WireType& a5, const WireType& a6,
+      const WireType& a7, const WireType& a8, const WireType& a9)  {
+    const WireType* const args[] = { &a0, &a1, &a2, &a3, &a4, &a5, &a6, &a7, &a8, &a9 };
+    return ch->Send(msg_id, args, 10);
   }
 
   // Note: If you are adding more SendMsg() functions, update Channel::kMaxNumArgs accordingly.
@@ -252,9 +293,20 @@ class MsgParamConverter<msg_id> {                           \
 
 #define IPC_MSG_P8(rt, tname)                               \
   rt p7() const {                                           \
-    COMPILE_CHK(1 <= kNumParams);                           \
+    COMPILE_CHK(8 <= kNumParams);                           \
     return wt_->Recover##tname();                           \
   }
 
+#define IPC_MSG_P9(rt, tname)                               \
+  rt p8() const {                                           \
+    COMPILE_CHK(9 <= kNumParams);                           \
+    return wt_->Recover##tname();                           \
+  }
+
+#define IPC_MSG_P10(rt, tname)                              \
+  rt p9() const {                                           \
+    COMPILE_CHK(10 <= kNumParams);                          \
+    return wt_->Recover##tname();                           \
+  }
 
 #endif  // SIMPLE_IPC_MSG_DISPATCH_H_

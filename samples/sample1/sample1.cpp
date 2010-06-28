@@ -40,10 +40,13 @@ int WorkerMain(const wchar_t*) {
     return 1;
   }
   for (int ix = 0; ix != 3000; ++ix) {
-    worker.WriteFileStr("x01234567899876543210");
+    if (!worker.WriteFileStr("x01234567899876543210")) {
+      ::MessageBoxW(NULL, L"error worker exit", L"sample1", MB_OK);
+      return 1;
+    }
     ::Sleep(5);
   }
-  ::MessageBoxW(NULL, L"worker exit", L"sample1", MB_OK);
+  ::MessageBoxW(NULL, L"normal worker exit", L"sample1", MB_OK);
   return 0;
 }
 
@@ -118,6 +121,9 @@ LRESULT __stdcall WndProc(HWND window, UINT message, WPARAM wparam, LPARAM lpara
 		    case IDM_EXIT:
           ::DestroyWindow(window);
 		      break;
+        case ID_FILE_SUICIDE:
+          ::ExitProcess(0);
+          break;
 	      default:
           return ::DefWindowProc(window, message, wparam, lparam);
 		  }

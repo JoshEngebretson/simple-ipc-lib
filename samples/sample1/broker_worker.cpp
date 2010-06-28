@@ -146,6 +146,8 @@ bool Broker::SpawnWorker(const wchar_t* cmdline) {
 
   worker_process_ = pi.hProcess;
   ::CloseHandle(pi.hThread);
+  // The client side of the pipe has been already duplicated into the worker process.
+  ::CloseHandle(pp.fd2());
   
   svc_thread_ = ::CreateThread(NULL, NULL, SvcThreadTrampoline, new Context(this, pp.fd1()), 0, NULL);
   if (!svc_thread_) {
