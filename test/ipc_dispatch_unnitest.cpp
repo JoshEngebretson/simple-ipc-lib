@@ -25,7 +25,7 @@ DEFINE_IPC_MSG_CONV(5, 3) {
 class DispTestMsg5 : public DispTestMsg,
                      public ipc::MsgIn<5, DispTestMsg5, DummyChannel> {
 public:
-  size_t OnMsg(DummyChannel* ch, int a1, char a2, const wchar_t* str) {
+  size_t OnMsg(DummyChannel* /*ch*/, int a1, char a2, const wchar_t* str) {
     return ((a1 == 7) && (a2 == 'a') && (std::wstring(str) == L"hello planet!")) ? 1: 0;
   }
 };

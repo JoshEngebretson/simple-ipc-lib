@@ -78,12 +78,12 @@ class Channel {
 
     encoder.SetMsgId(msg_id);
     if (!encoder.Close())
-      return -1;
+      return static_cast<size_t>(-1);
 
     size_t size;
     const void* buf = encoder.GetBuffer(&size);
     if (!buf)
-      return -2;
+      return static_cast<size_t>(-2);
     return transport_->Send(buf, size);
   }
 
@@ -112,11 +112,11 @@ class Channel {
       } while (decoder.OnData(buf, received));
 
       if(!decoder.Success())
-        return -1;
+        return static_cast<size_t>(-1);
 
       size_t np = handler.GetArgCount();
       if (np > kMaxNumArgs)
-        return -2;
+        return static_cast<size_t>(-2);
 
       const WireType* args[kMaxNumArgs];
       for (size_t ix = 0; ix != np; ++ix) {

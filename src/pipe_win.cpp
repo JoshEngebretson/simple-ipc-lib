@@ -36,7 +36,7 @@ HANDLE OpenPipeClient(const wchar_t* name, bool inherit) {
   pipename += name;
 
   SECURITY_ATTRIBUTES sa = {sizeof(sa), NULL, inherit ? TRUE : FALSE};
-  while (true) {
+  for (;;) {
     HANDLE pipe = ::CreateFileW(pipename.c_str(), GENERIC_READ | GENERIC_WRITE, 0, &sa,
                                 OPEN_EXISTING, SECURITY_SQOS_PRESENT | SECURITY_IDENTIFICATION, NULL);
     if (INVALID_HANDLE_VALUE == pipe) {

@@ -32,7 +32,7 @@ int __stdcall wWinMain(HINSTANCE instance, HINSTANCE, wchar_t*, int) {
   }
 }
 
-int WorkerMain(const wchar_t* cmdline) {
+int WorkerMain(const wchar_t*) {
  ::MessageBoxW(NULL, L"worker process", L"sample1", MB_OK);
 
   Worker worker;
@@ -47,7 +47,7 @@ int WorkerMain(const wchar_t* cmdline) {
   return 0;
 }
 
-int BrokerMain(HINSTANCE instance, const wchar_t* cmdline) {
+int BrokerMain(HINSTANCE instance, const wchar_t*) {
   HWND win = CreateMainWindow(instance);
   if (!win) {
     return -1;
@@ -97,7 +97,7 @@ HWND CreateMainWindow(HINSTANCE instance) {
    return window;
 }
 
-void PaintMainWindow(HDC dc, PAINTSTRUCT* ps) {
+void PaintMainWindow(HDC dc, PAINTSTRUCT* /*ps*/) {
   ::SelectObject(dc, GetStockObject(DC_BRUSH));    
   ::SetDCBrushColor(dc, RGB(255,0,0));
   ::Rectangle(dc, 5, 4, 400, 300);

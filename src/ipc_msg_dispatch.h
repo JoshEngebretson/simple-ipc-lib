@@ -35,7 +35,7 @@ public:
 
   size_t OnMsgIn(int msg_id, ChannelT* ch, const WireType* const args[], int count) {
     if (MsgId != msg_id) {
-      return -1;
+      return static_cast<size_t>(-1);
     }
     if (count != PC::kNumParams)
       return static_cast<DerivedT*>(this)->OnMsgArgCountError(count);

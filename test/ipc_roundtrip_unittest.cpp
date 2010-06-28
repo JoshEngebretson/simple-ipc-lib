@@ -91,7 +91,7 @@ public:
   bool Loop() {
     if (!transport_.IsConnected())
       return false;
-    while (true) {
+    for (;;) {
       if (0 != channel_.Receive(this)) break;
     }
     return true;
@@ -154,7 +154,7 @@ public:
   // Called when the appropiate message (reply) arrives from the server.
   size_t OnMsg(PipeChannel*, const char* ans) {
     if (!ans)
-      return -1;
+      return static_cast<size_t>(-1);
     ans_ = ans;
     return 3;
   }
@@ -180,6 +180,7 @@ int TestFullRoundTrip() {
 #if defined(WIN32)
   // The server runs in a new thread and the client runs in the main thread.
   HANDLE thread = ::CreateThread(NULL, 0, SumMultOddRpcSvcThread, &pp, 0, NULL);
+  ::CloseHandle(thread);
   ::Sleep(60);
 #else
   pthread_t thread;

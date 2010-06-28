@@ -100,13 +100,13 @@ public:
     return true;
   }
 
-  bool OnUnixFd(int fd, int tag) {
+  bool OnUnixFd(int /*fd*/, int tag) {
     SetHeaderNext(tag);
     // $$ implement
     return true;
   }
 
-  bool OnWinHandle(void* handle, int tag) {
+  bool OnWinHandle(void* /*handle*/, int tag) {
     SetHeaderNext(tag);
     // $$ implement
     return true;
@@ -184,7 +184,7 @@ public:
   void Reset() {
     state_ = DEC_S_START;
     e_count_ = -1;
-    d_count_ = -1;
+    d_count_ = static_cast<size_t>(-1);
     next_char_ = 0;
     res_ = DEC_NONE;
   }

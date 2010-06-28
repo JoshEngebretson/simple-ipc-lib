@@ -26,11 +26,11 @@ public:
                          const ipc::WireType* const args[], 
                          int count) = 0;
 
-  bool OnMsgArgCountError(int count) {
+  bool OnMsgArgCountError(int /*count*/) {
     return false;
   }
 
-  bool OnMsgArgConvertError(int code) {
+  bool OnMsgArgConvertError(int /*code*/) {
     return false;
   }
 };
@@ -61,7 +61,7 @@ public:
     return OnMsgInX(msg_id, ch, args, count);
   }
 
-  size_t OnMsg(PipeChannel*, const wchar_t* fname, const ipc::ByteArray& ba) {
+  size_t OnMsg(PipeChannel*, const wchar_t* /*fname*/, const ipc::ByteArray& /*ba*/) {
     if (!broker_->QueryPolicy(Broker::FILES)) {
       return 0;
     }
@@ -78,8 +78,9 @@ private:
 
 class BadMessageRecv : public BaseMsgHandler {
 public:
-  virtual size_t OnMsgIn(int msg_id, PipeChannel* ch, const ipc::WireType* const args[], int count) {
-    return -1;
+  virtual size_t OnMsgIn(int /*msg_id*/, PipeChannel* /*ch*/, const ipc::WireType* const args[], int /*count*/) {
+    args;
+    return static_cast<size_t>(-1);
   }
 };
 
@@ -180,17 +181,17 @@ DWORD Broker::ServiceThread(Context* ctx) {
 
   MsgDispatch top_dispatch(this);
   // To quickly test use channel.ReceiveLocal(&top_dispatch, 4) here.
-  while (true) {
+  for (;;) {
     if (0 != channel.Receive(&top_dispatch)) break;
   }
   return 0;
 }
 
-void Broker::LogCall(Broker::PolicyArea pa) {
+void Broker::LogCall(Broker::PolicyArea /*pa*/) {
   ::InterlockedIncrement(&calls_);
 }
 
-long Broker::GetNumCallsPerArea(Broker::PolicyArea pa) {
+long Broker::GetNumCallsPerArea(Broker::PolicyArea /*pa*/) {
   return calls_;
 }
 

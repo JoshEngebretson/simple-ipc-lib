@@ -20,7 +20,7 @@
 namespace {
 
 #if defined(WIN32)
-void TestErrorStop(int error) {
+void TestErrorStop(int /*error*/) {
   __debugbreak();
 }
 #else
@@ -56,6 +56,7 @@ int TestFullRoundTrip();
 
 #if defined(WIN32)
 int wmain(int argc, wchar_t* argv[]) {
+  argc; argv;
 #else
 int main(int argc, char* const argv[]) {
 #endif
