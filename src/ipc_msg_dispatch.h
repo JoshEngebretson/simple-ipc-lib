@@ -122,7 +122,7 @@ protected:
   size_t DispatchImpl(const Int2Type<10>&, ChannelT* ch, const WireType* const args[]) {
     return static_cast<DerivedT*>(this)->OnMsg(ch, PC(args[0]).p0(), PC(args[1]).p1(), PC(args[2]).p2(),
                                                PC(args[3]).p3(), PC(args[4]).p4(), PC(args[5]).p5(),
-                                               PC(args[6]).p6(), PC(args[7]).p7(), PC(args[8]).p8()
+                                               PC(args[6]).p6(), PC(args[7]).p7(), PC(args[8]).p8(),
                                                PC(args[9]).p9());
   }
 
