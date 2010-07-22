@@ -26,7 +26,7 @@ class DispTestMsg5 : public DispTestMsg,
                      public ipc::MsgIn<5, DispTestMsg5, DummyChannel> {
 public:
   size_t OnMsg(DummyChannel* /*ch*/, int a1, char a2, const wchar_t* str) {
-    return ((a1 == 7) && (a2 == 'a') && (std::wstring(str) == L"hello planet!")) ? 1: 0;
+    return ((a1 == 7) && (a2 == 'a') && (IPCWString(str) == L"hello planet!")) ? 1: 0;
   }
 };
 
@@ -39,7 +39,7 @@ class DispTestMsg3 : public DispTestMsg,
                      public ipc::MsgIn<3, DispTestMsg3, TestChannel> {
 public:
   size_t OnMsg(TestChannel*, int ix, const char* tx) {
-    return ((ix == 56789) && (std::string(tx) == "1234")) ? 77: 0;
+    return ((ix == 56789) && (IPCString(tx) == "1234")) ? 77: 0;
   }
 };
 

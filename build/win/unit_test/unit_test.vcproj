@@ -381,6 +381,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\..\test\ipc_utils_unittest.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\..\test\test_main.cpp"
 				>
 			</File>

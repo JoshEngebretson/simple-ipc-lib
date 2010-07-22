@@ -44,6 +44,8 @@ void TestRunner(const char* test, int result) {
 /////////////////////////////////////////////////////////////////////////////////////////
 // Main test driver
 
+int TestPodVector();
+int TestHolderString();
 int TestCodecRaw1();
 int TestCodecRaw2();
 int TestCodecRaw3();
@@ -60,6 +62,8 @@ int wmain(int argc, wchar_t* argv[]) {
 #else
 int main(int argc, char* const argv[]) {
 #endif
+  TEST_FN(TestPodVector());
+  TEST_FN(TestHolderString());
   TEST_FN(TestCodecRaw1());
   TEST_FN(TestCodecRaw2());
   TEST_FN(TestCodecRaw3());

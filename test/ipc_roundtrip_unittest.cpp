@@ -119,11 +119,11 @@ private:
       long long prod = x * static_cast<long long> (y);
       _i64toa_s(prod, buf, 64, 10);
     }
-    temp_ += buf;
+    temp_.append(buf);
     return temp_.c_str();
   }
 
-  std::string temp_;
+  IPCString temp_;
   PipeChannel channel_;
   PipeTransport transport_;
 };
@@ -139,7 +139,7 @@ public:
   }
 
   // Sends the RPC request to the server and waits for the answer.
-  bool Call(int x, int y, std::string* answer) {
+  bool Call(int x, int y, IPCString* answer) {
     if (!transport_.IsConnected())
       return false;
     SumMultOddSendM28 msg;
@@ -160,7 +160,7 @@ public:
   }
 
 private:
-  std::string ans_;
+  IPCString ans_;
   PipeChannel channel_;
   PipeTransport transport_;
 };
@@ -190,7 +190,7 @@ int TestFullRoundTrip() {
 #endif
   SumMultOddRpcClient client(&pp);
 
-  std::string ans;
+  IPCString ans;
 //$$  volatile DWORD gtc = ::GetTickCount();
 
   for (int ix = 0; ix != 1000; ++ix) {

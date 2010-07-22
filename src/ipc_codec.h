@@ -15,7 +15,8 @@
 #ifndef SIMPLE_IPC_CODEC_H_
 #define SIMPLE_IPC_CODEC_H_
 
-#include <string>
+#include "os_includes.h"
+
 #include <vector>
 #include <deque>
 
@@ -86,14 +87,14 @@ public:
     return true;
   };
 
-  bool OnString8(const std::string& s, int tag) {
+  bool OnString8(const IPCString& s, int tag) {
     SetHeaderNext(tag | ENC_STRN08);
     PushBack(s.size());
     AddStr(s);
     return true;
   }
 
-  bool OnString16(const std::wstring& s, int tag) {
+  bool OnString16(const IPCWString& s, int tag) {
     SetHeaderNext(tag | ENC_STRN16);
     PushBack(s.size());
     AddStr(s);
@@ -138,16 +139,16 @@ private:
   template <typename StringT> 
   void AddStr(const StringT& s ) {
     const int times = sizeof(Data::value_type) / sizeof(typename StringT::value_type);
-    typename StringT::const_iterator it(s.begin());
+    size_t it = 0;
     do {
       int v = 0;
       for (int ix = 0; ix != times; ++ix) {
-        if (it == s.end()) break;
-        v |= (*it) << ix * sizeof(typename StringT::value_type) * 8;
+        if (it == s.size()) break;
+        v |= (s[it]) << ix * sizeof(typename StringT::value_type) * 8;
         ++it;
       }
       PushBack(v);
-    } while (it != s.end());
+    } while (it != s.size());
   }
 
   typedef std::vector<void*> Data;
@@ -339,7 +340,8 @@ private:
     if(!HasEnoughUnProcessed(sz_rounded))
       return false;
     const char* beg = &data_[next_char_];
-    std::string str(beg, beg + str_sz);
+    IPCString str;
+    str.assign(beg, str_sz);
     next_char_ += sz_rounded * sizeof(void*);
     handler_->OnString8(str, tag);
     return true;
@@ -352,7 +354,8 @@ private:
     if(!HasEnoughUnProcessed(sz_rounded))
       return false;
     const wchar_t* beg = reinterpret_cast<wchar_t*>(&data_[next_char_]);
-    std::wstring str(beg, beg + str_sz);
+    IPCWString str;
+    str.assign(beg, str_sz);
     next_char_ += sz_rounded * sizeof(void*);
     handler_->OnString16(str, tag);
     return true;

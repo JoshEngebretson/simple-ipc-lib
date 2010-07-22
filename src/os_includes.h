@@ -29,4 +29,18 @@
 
 #endif  // defined(WIN32)
 
+//////////////////////////////// Every OS /////////////////////////////////////////////////////////
+#define IPC_USE_STL
+
+#if defined(IPC_USE_STL)
+  #include <string>
+  typedef std::string IPCString;
+  typedef std::wstring IPCWString;
+#else
+  #include "ipc_utils.h"
+  typedef ipc::HolderString<char> IPCString;
+  typedef ipc::HolderString<wchar_t> IPCWString;
+#endif
+
+
 #endif  // SIMPLE_IPC_OS_INCLUDES_H_

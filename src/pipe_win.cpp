@@ -14,7 +14,6 @@
 
 #include "os_includes.h"
 
-#include <string>
 #include "pipe_win.h"
 
 namespace {
@@ -24,16 +23,16 @@ const int kPipeBufferSz = 4 * 1024;
 LONG g_pipe_seq = 0;
 
 HANDLE OpenPipeServer(const wchar_t* name) {
-  std::wstring pipename(kPipePrefix);
-  pipename += name;
+  IPCWString pipename(kPipePrefix);
+  pipename.append(name);
   return ::CreateNamedPipeW(pipename.c_str(), PIPE_ACCESS_DUPLEX,
                             PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_WAIT,
                             1, kPipeBufferSz, kPipeBufferSz, 200, NULL);
 }
 
 HANDLE OpenPipeClient(const wchar_t* name, bool inherit) {
-  std::wstring pipename(kPipePrefix);
-  pipename += name;
+  IPCWString pipename(kPipePrefix);
+  pipename.append(name);
 
   SECURITY_ATTRIBUTES sa = {sizeof(sa), NULL, inherit ? TRUE : FALSE};
   for (;;) {

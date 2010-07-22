@@ -41,8 +41,8 @@
 //    bool Close()
 //    void SetMsgId(int msg_id)
 //    bool OnWord(void* bits, int tag)
-//    bool OnString8(const std::string& s, int tag)
-//    bool OnString16(const std::wstring& s, int tag)
+//    bool OnString8(const string& s, int tag)
+//    bool OnString16(const wstring& s, int tag)
 //    bool OnUnixFd(int fd, int tag)
 //    bool OnWinHandle(void* handle, int tag)
 //    const void* GetBuffer(size_t* sz)
@@ -54,8 +54,8 @@
 //  Decoder<Handler> should call:
 //    bool Handler::OnMessageStart(int id, int n_args)
 //    bool Handler::OnWord(const void* bits, int type_id)
-//    bool Handler::OnString8(std::string& str, int type_id) 
-//    bool Handler::OnString16(std::wstring& str, int type_id)
+//    bool Handler::OnString8(string& str, int type_id) 
+//    bool Handler::OnString16(wstring& str, int type_id)
 //
 
 namespace ipc {
@@ -197,13 +197,13 @@ class Channel {
     }
 
     // Handles the byte-sized arrays.
-    bool OnString8(std::string& str, int type_id) {
+    bool OnString8(IPCString& str, int type_id) {
       switch (type_id) {
         case ipc::TYPE_STRING8:
           list_.push_back(WireType(str.c_str()));
           break;
         case ipc::TYPE_BARRAY:
-          list_.push_back(WireType(ByteArray(str.size(), &str[0])));
+          list_.push_back(WireType(ByteArray(str.size(), str.c_str())));
           break;
         default: 
           return false;
@@ -212,7 +212,7 @@ class Channel {
     }
 
     // Handles the wchar-sized arrays.
-    bool OnString16(std::wstring& str, int type_id) {
+    bool OnString16(IPCWString& str, int type_id) {
       switch (type_id) {
         case ipc::TYPE_STRING16:
           list_.push_back(WireType(str.c_str()));
@@ -257,13 +257,13 @@ private:
 
       case ipc::TYPE_STRING8:
       case ipc::TYPE_BARRAY: {
-          std::string ctemp;
+          IPCString ctemp;
           wtype.GetString8(&ctemp);
           return encoder->OnString8(ctemp, wtype.Id());
         }
 
       case ipc::TYPE_STRING16: {
-        std::wstring wtemp;
+          IPCWString wtemp;
           wtype.GetString16(&wtemp);
           return encoder->OnString16(wtemp, wtype.Id());
         }

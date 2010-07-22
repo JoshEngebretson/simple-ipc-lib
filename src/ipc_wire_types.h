@@ -15,8 +15,7 @@
 #ifndef SIMPLE_IPC_WIRE_TYPES_H_
 #define SIMPLE_IPC_WIRE_TYPES_H_
 
-#include <stdlib.h>
-#include <string>
+#include "os_includes.h"
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // This header defines the basic c++ types that can be transported via IPC.
@@ -80,8 +79,8 @@ class MultiType {
     wchar_t v_wchar;
     void* v_pvoid;
   } store;
-  mutable std::string store_str8;
-  mutable std::wstring store_str16;
+  mutable IPCString store_str8;
+  mutable IPCWString store_str16;
 
  private:
   int id_;
@@ -120,9 +119,9 @@ class WireType : public MultiType {
   //
   void* GetAsBits() const { return store.v_pvoid; }
 
-  void GetString8(std::string* out) const { out->swap(store_str8); }
+  void GetString8(IPCString* out) const { out->swap(store_str8); }
 
-  void GetString16(std::wstring* out) const { out->swap(store_str16); }
+  void GetString16(IPCWString* out) const { out->swap(store_str16); }
   
   bool IsNullArray() const { return (store.v_int < 0); }
 
@@ -172,7 +171,7 @@ class WireType : public MultiType {
 
   //$$ todo recover buffer type
   const ByteArray RecoverByteArray() const {
-    if (Id() == ipc::TYPE_BARRAY) return ByteArray(store_str8.size(), store_str8.data());
+    if (Id() == ipc::TYPE_BARRAY) return ByteArray(store_str8.size(), store_str8.c_str());
     else if (Id() == ipc::TYPE_NULLBARRAY) return ByteArray(0, NULL);
     else throw int(ipc::TYPE_BARRAY);
   }
@@ -213,6 +212,7 @@ class WireType : public MultiType {
   void Set(const UxFileDesc& fd) { store.v_int = fd.fd_; }
 
   void Set(const WinHandle& wh) { store.v_pvoid = wh.h_; }
+
 };
 
 }  // namespace ipc.
