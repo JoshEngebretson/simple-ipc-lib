@@ -16,6 +16,7 @@
 #define SIMPLE_IPC_UTLIS_H_
 
 #include <string.h>
+#include <wchar.h>
 
 #if !defined(countof)
   template <typename T, size_t N>

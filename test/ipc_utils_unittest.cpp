@@ -208,8 +208,8 @@ int TestStringImpl(const ChT (&txt)[N1], const ChT (&tzt)[N2]) {
 }
 
 int TestHolderString() {
-  int rv1 = TestStringImpl("All the world I’ve seen before me passing by", "We the people");
-  int rv2 = TestStringImpl(L"We the people", L"All the world I’ve seen before me passing by");
+  int rv1 = TestStringImpl("All the world I've seen before me passing by", "We the people");
+  int rv2 = TestStringImpl(L"We the people", L"All the world I've seen before me passing by");
   return rv1 + rv2;
 }
 
