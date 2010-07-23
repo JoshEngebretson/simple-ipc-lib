@@ -40,7 +40,72 @@ int StringCompare<wchar_t>(const wchar_t* s1, const wchar_t* s2) {
   return wcscmp(s1, s2);
 }
 
+class NonPod {
+public:
+  NonPod(const NonPod& oth) {
+    foo_ = oth.foo_ + 1;
+    bar_ = oth.bar_;
+  }
+
+  ~NonPod() {
+    ++dtor_called;
+  }
+
+  NonPod(char foo) : foo_(foo), bar_(kBar) {
+  }
+
+  int get_foo() const { return foo_; }
+
+  bool has_the_bar() {
+    return (kBar == bar_); 
+  }
+
+  static int dtor_called;
+  const static long long kBar = 0x7369746965726568;
+
+private:
+  NonPod();
+
+  char foo_;
+  long long bar_;
+};
+
+int NonPod::dtor_called = 0;
+
 }  //namespace
+
+int TestFixedArray() {
+  ipc::FixedArray<NonPod, 8> far;
+  if (far.size())
+    return 1;
+  if (far.max_size() != 8)
+    return 2;
+
+  NonPod pod(2);
+  far.push_back(pod);
+  for (int ix = 0; ix != 7; ++ix) {
+    if (!far.push_back(far[ix]))
+      return 3;
+  }
+  if (far.push_back(pod))
+    return 3;
+  if (far.size() != 8)
+    return 4;
+
+  for (int ix = 0; ix != 8; ++ix) {
+    if (far[ix].get_foo() != (ix + 3))
+      return 5;
+    if (!far[ix].has_the_bar())
+      return 6;
+  }
+
+  far.clear();
+  if (far.size())
+    return 7;
+  if (NonPod::dtor_called != 8)
+    return 8;
+  return 0;
+}
 
 
 #pragma warning(push)

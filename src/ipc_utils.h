@@ -17,6 +17,7 @@
 
 #include <string.h>
 #include <wchar.h>
+#include <new>
 
 #if !defined(countof)
   template <typename T, size_t N>
@@ -45,6 +46,57 @@ namespace ipc {
 // to have the same functional interface as std::basic_string for the methods
 // that the ipc library uses.
 
+// This container class is an array-like which contains enough functionality
+// to replace vector<WireType> in the channel template. This is the only class
+// here that supports T to be non-pod and also T does not need a default ctor.
+template <typename T, size_t N>
+class FixedArray {
+public:
+  FixedArray() : index_(0) {}
+
+  ~FixedArray() {
+    clear();
+  }
+
+  bool push_back(const T& ob) {
+    if (index_ == N)
+      return false;
+    new(as_obj(index_)) T(ob);
+    ++index_;
+    return true;
+  }
+
+  T& operator[](size_t ix) {
+    return *as_obj(ix);
+  }
+
+  //dummy.
+  void reserve(size_t) {}
+
+  size_t max_size() const { return N; }
+
+  size_t size() const { return index_; }
+
+  void clear() {
+    for (size_t ix = 0; ix != index_; ++ix) {
+      as_obj(ix)->~T();
+    }
+    index_ = 0;
+  }
+
+private:
+  T* as_obj(size_t ix) { 
+    return reinterpret_cast<T*>(&v_[ix * sizeof(T)]);
+  }
+
+  size_t index_;
+  char v_[N * sizeof(T)];
+
+  FixedArray(const FixedArray&);
+  FixedArray& operator=(const FixedArray&);
+};
+
+// This container is the backing store of HoldeString.
 template <typename T>
 class PodVector {
 public:
@@ -116,6 +168,8 @@ private:
   T* buf_;
 };
 
+// Groups common functionality to the specializations of
+// HolderString below.
 template <typename Ct>
 class StringBase {
 public:
@@ -177,6 +231,9 @@ protected:
 template <typename Ct>
 class HolderString;
 
+// Two specializations of HolderString for char and wchar_t that
+// have enough functionality to replace (if desired) the use of the
+// standard basic_string.
 template <>
 class HolderString<char> : public StringBase<char> {
 public:
@@ -231,4 +288,3 @@ public:
 }  // namespace ipc.
 
 #endif // SIMPLE_IPC_UTLIS_H_
-

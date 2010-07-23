@@ -15,7 +15,7 @@
 #ifndef SIMPLE_IPC_CHANNEL_H_
 #define SIMPLE_IPC_CHANNEL_H_
 
-#include <vector>
+#include "ipc_utils.h"
 #include "ipc_wire_types.h"
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -237,7 +237,7 @@ class Channel {
     }
 
   private:
-    typedef std::vector<WireType> RxList;
+    typedef FixedArray<WireType, (kMaxNumArgs + 1)> RxList;
     RxList list_;
     int msg_id_;
   };
