@@ -250,8 +250,10 @@ private:
     d_count_ = ReadNextInt();
     if ((d_count_ < 5) || (d_count_ > (8 * 1024 * 1024)))
       return DEC_ERROR;
-    // Done with the key header piece
-    handler_->OnMessageStart(msg_id, e_count_);
+    // Done with the key header piece.
+    if (!handler_->OnMessageStart(msg_id, e_count_))
+      return DEC_ERROR;
+    // The handler is willing to accept the message.
     d_count_ -= 4;
     state_ = DEC_S_HEADSZ;
     if (HasEnoughUnProcessed(1))

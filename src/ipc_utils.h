@@ -70,9 +70,6 @@ public:
     return *as_obj(ix);
   }
 
-  //dummy.
-  void reserve(size_t) {}
-
   size_t max_size() const { return N; }
 
   size_t size() const { return index_; }

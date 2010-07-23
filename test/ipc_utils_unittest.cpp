@@ -104,6 +104,13 @@ int TestFixedArray() {
     return 7;
   if (NonPod::dtor_called != 8)
     return 8;
+
+  far.push_back(NonPod(5));
+  if (far.size() != 1)
+    return 9;
+  if (far[0].get_foo() != 6)
+    return 10;
+
   return 0;
 }
 

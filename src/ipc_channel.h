@@ -162,7 +162,8 @@ class Channel {
     // Called when a valid message preamble is received.
     bool OnMessageStart(int id, int n_args) {
       msg_id_ = id;
-      list_.reserve(n_args);
+      if (n_args > kMaxNumArgs)
+        return false;
       return true;
     }
 
