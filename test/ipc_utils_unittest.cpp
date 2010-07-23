@@ -61,7 +61,7 @@ public:
   }
 
   static int dtor_called;
-  const static long long kBar = 0x7369746965726568;
+  const static long long kBar = 0x7369746965726568ll;
 
 private:
   NonPod();
