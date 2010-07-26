@@ -30,16 +30,19 @@
 #endif  // defined(WIN32)
 
 //////////////////////////////// Every OS /////////////////////////////////////////////////////////
-#define IPC_USE_STL
+//#define IPC_USE_STL
 
 #if defined(IPC_USE_STL)
   #include <string>
+  #include <vector>
   typedef std::string IPCString;
   typedef std::wstring IPCWString;
+  typedef std::vector<char> IPCCharVector;
 #else
   #include "ipc_utils.h"
   typedef ipc::HolderString<char> IPCString;
   typedef ipc::HolderString<wchar_t> IPCWString;
+  typedef ipc::PodVector<char> IPCCharVector;
 #endif
 
 

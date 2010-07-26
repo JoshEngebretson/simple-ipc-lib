@@ -20,8 +20,10 @@ template <typename T, size_t N>
 bool ArrEqual(const T (&arr)[N], ipc::PodVector<T>& vec) {
   if (vec.size() != N)
     return false;
+  if (vec.capacity() <= N)
+    return false;
   for (size_t ix = 0; ix != N; ++ix) {
-    if (vec.get()[ix] != arr[ix])
+    if (vec[ix] != arr[ix])
       return false;
   }
   return true;
@@ -121,7 +123,7 @@ int TestFixedArray() {
 int TestPodVector() {
   {
     ipc::PodVector<int> vec;
-    if (vec.get() != 0)
+    if ((vec.get() != 0) || (vec.capacity() != 0))
       return 1;
     
     int a[] = {5, 4, 3, 2, 1, 0, -1, -2};
@@ -138,82 +140,105 @@ int TestPodVector() {
     vec.Set(b, countof(b));
     if (!ArrEqual(b, vec))
       return 4;
+
+    vec.clear();
+    if (vec.size())
+      return 5;
   }
 
   {
     ipc::PodVector<double> vec;
     vec.Set(0, 0);
     if (vec.get() != 0)
-      return 5;
+      return 8;
   }
 
   {
     ipc::PodVector<wchar_t> vec;
     if (vec.get() != 0)
-      return 6;
+      return 9;
    
     wchar_t a[] = {6, 7, 5, 4, 3, 2, 1, 8, -1, -2};
     vec.Add(a, countof(a));
     if (!ArrEqual(a, vec))
-      return 7;
+      return 10;
 
     wchar_t b[] = {-3, -4, 5, 6, 0};
     vec.Add(b, countof(b));
     wchar_t c[] = {6, 7, 5, 4, 3, 2, 1, 8, -1, -2, -3, -4, 5, 6, 0};
     if (!ArrEqual(c, vec))
-      return 8;
+      return 11;
 
     vec.Set(b, countof(b));
     if (!ArrEqual(b, vec))
-      return 9;
+      return 12;
   }
 
   {
     ipc::PodVector<char> vec;
     if (vec.get() != 0)
-      return 10;
+      return 13;
     
     char a[] = {5};
     vec.Add(a, countof(a));
     if (!ArrEqual(a, vec))
-      return 11;
+      return 14;
 
     char b[] = {-3, -4, 5, 6, 0};
     vec.Add(b, countof(b));
     char c[] = {5, -3, -4, 5, 6, 0};
     if (!ArrEqual(c, vec))
-      return 12;
+      return 15;
 
     vec.Set(b, countof(b));
     if (!ArrEqual(b, vec))
-      return 13;
+      return 16;
 
     ipc::PodVector<char> vec2;
     vec2.Swap(vec);
     if (!ArrEqual(b, vec2))
-      return 13;
+      return 17;
     if (0 != vec.size())
-      return 14;
+      return 18;
+  }
+
+  {
+    void* a[] = { (void*)55, (void*)66, (void*)77 };
+    ipc::PodVector<void*> vec;
+    vec.resize(countof(a));
+    if (vec.size() != countof(a))
+      return 22;
+    for (size_t ix = 0; ix != countof(a); ++ix) {
+      if (vec[ix] != (void*)(0))
+        return 23;
+    }
+    for (size_t ix = 0; ix != countof(a); ++ix) {
+      vec[ix] = a[ix];
+    }
+    if (!ArrEqual(a, vec))
+      return 24;
   }
 
   return 0;
 }
 
-template <typename ChT, size_t N1, size_t N2>
-int TestStringImpl(const ChT (&txt)[N1], const ChT (&tzt)[N2]) {
+template <typename ChT, size_t N1, size_t N2, size_t N3>
+int TestStringImpl(const ChT (&txt)[N1], const ChT (&tzt)[N2], const ChT (&non)[N3]) {
   
   {
     ipc::HolderString<ChT> str;
     if (str.size() != 0)
       return 1;
+    if (StringCompare(str.c_str(), non))
+      return 2;
   }
 
   {
     ipc::HolderString<ChT> str(txt);
     if (str.size() != countof(txt) - 1)
-      return 2;
-    if (StringCompare(str.c_str(), txt))
       return 3;
+    if (StringCompare(str.c_str(), txt))
+      return 4;
   }
 
   {
@@ -221,9 +246,9 @@ int TestStringImpl(const ChT (&txt)[N1], const ChT (&tzt)[N2]) {
     ipc::HolderString<ChT> str2(tzt);
     str.swap(str2);
     if (StringCompare(str.c_str(), tzt))
-      return 4;
+      return 6;
     if (StringCompare(str2.c_str(), txt))
-      return 5;
+      return 7;
   }
 
   {
@@ -231,57 +256,78 @@ int TestStringImpl(const ChT (&txt)[N1], const ChT (&tzt)[N2]) {
     ipc::HolderString<ChT> str2(tzt);
     str2 = str;
     if (StringCompare(str.c_str(), txt))
-      return 6;
+      return 9;
     if (StringCompare(str2.c_str(), txt))
-      return 7;
+      return 10;
   }
 
   {
     ipc::HolderString<ChT> str;
     str = txt;
     if (StringCompare(str.c_str(), txt))
-      return 8;
+      return 11;
   }
 
   {
-
     ipc::HolderString<ChT> str;
     str.assign(txt, countof(txt) - 1);
     if (str.size() != countof(txt) - 1)
-      return 9;
+      return 13;
     if (StringCompare(str.c_str(), txt))
-      return 10;
+      return 14;
   }
 
   {
     ipc::HolderString<ChT> str(txt);
     if (str != txt)
-      return 11;
+      return 16;
     if (str == tzt)
-      return 12;
+      return 17;
   }
 
- {
+  {
     ipc::HolderString<ChT> str(txt);
     for (int ix =0; ix != countof(txt) -1; ++ix) {
       if (str[ix] != txt[ix])
-        return 13;
+        return 19;
     }
   }
 
- {
+  {
     ipc::HolderString<ChT> str(tzt);
     str.append(txt);
     if (str.size() != countof(txt) + countof(tzt) - 2)
-      return 14;
- }
+      return 20;
+  }
+
+  {
+    ipc::HolderString<ChT> str(non);
+    if (StringCompare(str.c_str(), non))
+      return 22;
+
+    str.append(non);
+    if (StringCompare(str.c_str(), non))
+      return 23;
+
+    size_t c = str.capacity();
+    ChT x[] = {0, 0};
+    for (size_t ix = 0; ix != c; ++ix) {
+      x[0] = ChT(48 + ix);
+      str.append(x);
+      if (str.capacity() < (str.size() + 1))
+        return 25;
+    }
+
+    if ((c + 1) >= str.capacity())
+      return 26;
+  }
 
   return 0;
 }
 
 int TestHolderString() {
-  int rv1 = TestStringImpl("All the world I've seen before me passing by", "We the people");
-  int rv2 = TestStringImpl(L"We the people", L"All the world I've seen before me passing by");
+  int rv1 = TestStringImpl("All the world I've seen before me passing by", "We the people", "");
+  int rv2 = TestStringImpl(L"We the people", L"All the world I've seen before me passing by", L"");
   return rv1 + rv2;
 }
 

@@ -15,7 +15,7 @@
 #ifndef SIMPLE_IPC_PIPE_WIN_H_
 #define SIMPLE_IPC_PIPE_WIN_H_
 
-#include <vector>
+#include "os_includes.h"
 
 class PipePair {
 public:
@@ -58,7 +58,7 @@ public:
   char* Receive(size_t* size);
 
 private:
-  std::vector<char> buf_;
+  IPCCharVector buf_;
 };
 
 #endif  // SIMPLE_IPC_PIPE_WIN_H_

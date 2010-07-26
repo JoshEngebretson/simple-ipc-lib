@@ -25,6 +25,10 @@
   #define countof(arr) (sizeof(_ArraySizeHelperX(arr)))
 #endif
 
+#if !defined(swap)
+  template <typename T>
+  void swap(T& a, T& b) { T t(a); a = b; b = t; }
+#endif
 
 namespace memdet {
 
@@ -93,64 +97,82 @@ private:
   FixedArray& operator=(const FixedArray&);
 };
 
-// This container is the backing store of HoldeString.
+// This container is the backing store of HoldeString and a generic
+// vector of plain-old-data.
 template <typename T>
 class PodVector {
 public:
   typedef T ValueType;
 
-  PodVector() : size_(0), buf_(0) {}
+  PodVector() : capa_(0), size_(0), buf_(0) {}
 
   ~PodVector() {
+    clear();
+  }
+
+  void clear() {
     memdet::delete_impl(buf_);
+    size_ = 0;
+    capa_ = 0;
+    buf_ = 0;
+  }
+
+  void resize(size_t n) {
+    if (n < size_) {
+      size_ = n;
+    }
+    else {
+      Add(0, n - size_);
+    }
   }
 
   T* get() const { return buf_; }
   size_t size() const { return size_; }
+  size_t capacity() const { return capa_; }
+
+  T& operator[](size_t ix) {
+    return buf_[ix];
+  }
+
+  const T& operator[](size_t ix) const {
+    return buf_[ix];
+  }
+
+  void push_back(const T& v) {
+    Add(&v, 1);
+  }
 
   void Add(const T* inp, size_t n) {
     if (!n)
       return;
-    T* newb = memdet::new_impl<T>(n + size_);
-    if (size_) {
+    
+    T* newb = NewAlloc(n);
+    if (newb) {
       memcpy(newb, buf_, size_ * sizeof(T));
       memdet::delete_impl(buf_);
+      buf_ = newb;
     }
-    memcpy(&newb[size_], inp, n * sizeof(T));
-    buf_ = newb;
+    if (inp) {
+      memcpy(&buf_[size_], inp, n * sizeof(T));
+    } else {
+      memset(&buf_[size_], 0, n * sizeof(T));
+    }
     size_ += n;
   }
 
   void Set(const T* inp, size_t n) {
-    if (n > size_) {
-      memdet::delete_impl(buf_);
-      size_ = 0;
-      Add(inp, n);
-    } else {
-      memcpy(buf_, inp, n * sizeof(T));
-      size_ = n;
-    }
+    size_ = 0;
+    Add(inp, n);
   }
 
   void Set(const PodVector<T>& other) {
     Set(other.buf_, other.size_);
   }
 
-  void GrowEmpty(size_t n) {
-    if (size_) {
-      memdet::delete_impl(buf_);
-    }
-    buf_ = memdet::new_impl<T>(n);
-    size_ = n;
-  }
-
   void Swap(PodVector<T>& other) {
-    T* tmp = other.buf_;
-    size_t tsz = other.size_;
-    other.buf_ = buf_;
-    other.size_ = size_;
-    buf_ = tmp;
-    size_ = tsz;
+    swap(buf_, other.buf_);
+    swap(size_, other.size_);
+    swap(capa_, other.capa_);
   }
 
   void DecSize() {
@@ -158,15 +180,28 @@ public:
   }
   
 private:
+  T* NewAlloc(size_t n) {
+    size_t rem = capa_ - size_;
+    if (n < rem) {
+      return 0;
+    }
+    size_t new_a = n + (size_ * 2) + 1;
+    capa_ = (new_a < 16)? 16 : new_a;
+    return memdet::new_impl<T>(capa_);
+  }
+
   PodVector(const PodVector&);
   PodVector& operator=(const PodVector&);
 
+  size_t capa_;
   size_t size_;
   T* buf_;
 };
 
-// Groups common functionality to the specializations of
-// HolderString below.
+// Groups common functionality to the specializations of HolderString below.
+// One trick one should be aware on this class is that leverages the fact that
+// PodVector overallocates always. So it is safe to write to str_[size_] for
+// example to null terminate.
 template <typename Ct>
 class StringBase {
 public:
@@ -182,9 +217,9 @@ public:
   }
 
   void assign(const Ct* str, size_t size) {
-    str_.GrowEmpty(size + 1);
     str_.Set(str, size);
-    str_.get()[size] = 0;
+    if (size)
+      str_[size] = Ct(0);
   }
 
   size_t size() const {
@@ -204,12 +239,14 @@ public:
   }
 
   Ct& operator[](size_t ix) {
-    return str_.get()[ix];
+    return str_[ix];
   }
 
   const Ct& operator[](size_t ix) const {
-    return str_.get()[ix];
+    return str_[ix];
   }
+
+  size_t capacity() const { return str_.capacity(); }
 
 protected:
   StringBase() {}
