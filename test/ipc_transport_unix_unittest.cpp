@@ -15,12 +15,10 @@
 #include "os_includes.h"
 #include "pipe_unix.h"
 
+#include <pthread.h>
+
 /////////////////////////////////////////////////////////////////////////////////////////
 // Test the Raw Pipe, since pipe operations are blocking, this requires two threads.
-
-#ifdef POSIX
-#include <pthread.h>
-#endif
 
 const wchar_t kPipeName[] = L"QWERTY1234";
 const char test_msg1[] = "0abcd10abcd10abcd10abcd10abcd10abcd10abcd10abcd10abcd10abcd1";
