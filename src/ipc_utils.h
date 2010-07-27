@@ -97,17 +97,48 @@ private:
   FixedArray& operator=(const FixedArray&);
 };
 
+
+// We don't support generic iterators but we define this magic two
+// types to support insertion to the end and erasure at the beggining.
+class IteratorEnd {};
+class IteratorBegin {};
+
+template <typename T>
+T operator+(const IteratorBegin&, T d) {
+  return d;
+}
+
 // This container is the backing store of HoldeString and a generic
-// vector of plain-old-data.
+// vector of plain-old-data. Caveat: Don't use this if your PoD does
+// not have an aceptable default value of 0 as in all bytes equal to
+// zero.
 template <typename T>
 class PodVector {
 public:
-  typedef T ValueType;
+  typedef T value_type;
 
   PodVector() : capa_(0), size_(0), buf_(0) {}
 
   ~PodVector() {
     clear();
+  }
+
+  const IteratorBegin begin() const { return IteratorBegin(); }
+
+  const IteratorEnd end() const { return IteratorEnd(); }
+
+  T* get() const { return buf_; }
+
+  size_t size() const { return size_; }
+
+  size_t capacity() const { return capa_; }
+
+  T& operator[](size_t ix) {
+    return buf_[ix];
+  }
+
+  const T& operator[](size_t ix) const {
+    return buf_[ix];
   }
 
   void clear() {
@@ -120,28 +151,36 @@ public:
   void resize(size_t n) {
     if (n < size_) {
       size_ = n;
+      return;
     }
-    else {
-      Add(0, n - size_);
-    }
+    Add(0, n - size_);
   }
 
-  T* get() const { return buf_; }
-  size_t size() const { return size_; }
-  size_t capacity() const { return capa_; }
-
-  T& operator[](size_t ix) {
-    return buf_[ix];
-  }
-
-  const T& operator[](size_t ix) const {
-    return buf_[ix];
+  void reserve(size_t n) {
+    if (n <= capa_)
+      return;
+    size_t old_s = size_;
+    Add(0, n - capa_);
+    size_ = old_s;
   }
 
   void push_back(const T& v) {
     Add(&v, 1);
   }
 
+  // We only support insertions at the end so here we are
+  void insert(const IteratorEnd&, const T* begin, const T* end) {
+    size_t d = end - begin;
+    if (d > 0)
+      Add(begin, end - begin);
+  }
+
+  void erase(const IteratorBegin&, size_t n) {
+    RemoveFront(n);
+  }
+
+  // when |inp| is null then we don't copy, we just set
+  // the new memory to zeros.
   void Add(const T* inp, size_t n) {
     if (!n)
       return;
@@ -158,6 +197,14 @@ public:
       memset(&buf_[size_], 0, n * sizeof(T));
     }
     size_ += n;
+  }
+
+  void RemoveFront(size_t n) {
+    if ((0 == size_) || (n > size_))
+      return;
+    size_t newsz = size_ - n;
+    memmove(buf_, &buf_[n], newsz);
+    size_ = newsz;
   }
 
   void Set(const T* inp, size_t n) {

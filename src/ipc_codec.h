@@ -138,7 +138,7 @@ private:
 
   template <typename StringT> 
   void AddStr(const StringT& s ) {
-    const int times = sizeof(Data::value_type) / sizeof(typename StringT::value_type);
+    const int times = sizeof(IPCVoidPtrVector::value_type) / sizeof(typename StringT::value_type);
     size_t it = 0;
     do {
       int v = 0;
@@ -151,8 +151,7 @@ private:
     } while (it != s.size());
   }
 
-  typedef std::vector<void*> Data;
-  Data data_;
+  IPCVoidPtrVector data_;
   int index_;
 };
 
@@ -383,8 +382,7 @@ private:
 
   HandlerT* handler_;
 
-  typedef std::vector<char> Data;
-  Data data_;
+  IPCCharVector data_;
   typedef std::deque<int> Items;
   Items items_;
 

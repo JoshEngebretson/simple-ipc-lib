@@ -202,8 +202,10 @@ int TestPodVector() {
       return 18;
   }
 
+  typedef void* VoidPt;
+  VoidPt a[] = { VoidPt(55), VoidPt(66), VoidPt(77) };
+
   {
-    void* a[] = { (void*)55, (void*)66, (void*)77 };
     ipc::PodVector<void*> vec;
     vec.resize(countof(a));
     if (vec.size() != countof(a))
@@ -217,6 +219,21 @@ int TestPodVector() {
     }
     if (!ArrEqual(a, vec))
       return 24;
+  }
+
+  {
+    ipc::PodVector<void*> vec;
+    vec.push_back(a[0]);
+    vec.insert(vec.end(), &a[1], &a[countof(a)]);
+
+    if (!ArrEqual(a, vec))
+      return 26;
+
+    vec.erase(vec.begin(), vec.begin() + 2);
+    if (vec.size() != 1)
+      return 27;
+    if (vec[0] != a[2])
+      return 28;
   }
 
   return 0;

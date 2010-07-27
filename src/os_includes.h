@@ -38,11 +38,13 @@
   typedef std::string IPCString;
   typedef std::wstring IPCWString;
   typedef std::vector<char> IPCCharVector;
+  typedef std::vector<void*> IPCVoidPtrVector;
 #else
   #include "ipc_utils.h"
   typedef ipc::HolderString<char> IPCString;
   typedef ipc::HolderString<wchar_t> IPCWString;
   typedef ipc::PodVector<char> IPCCharVector;
+  typedef ipc::PodVector<void*> IPCVoidPtrVector;
 #endif
 
 
