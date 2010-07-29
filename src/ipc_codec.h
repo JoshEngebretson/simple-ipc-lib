@@ -17,9 +17,6 @@
 
 #include "os_includes.h"
 
-#include <vector>
-#include <deque>
-
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // This file contains the default encoder & decoder for IPC. It does no compression and every
 // encoded element is aligned to the machine word size. For a 32 bit machine, this is how the
@@ -293,8 +290,9 @@ private:
   Result StateData() {
     if (!HasEnoughUnProcessed(d_count_))
       return DEC_MOREDATA;
+    size_t ix = 0;
     do {
-        int tag = items_.front();
+        int tag = items_[ix];
         if (tag & Encoder::ENC_STRN08) {
           tag &= ~Encoder::ENC_STRN08;
           ReadNextStr8(tag);
@@ -305,8 +303,9 @@ private:
           --d_count_;
           handler_->OnWord(ReadNextVoidPtr(), tag);
         }
-        items_.pop_front();
-        if (0 == items_.size()) {
+        ++ix;
+        if (items_.size() == ix) {
+          items_.clear();
           state_ = DEC_S_STOP;
           if (HasEnoughUnProcessed(1))
             return DEC_LOOPAGAIN;
@@ -383,8 +382,7 @@ private:
   HandlerT* handler_;
 
   IPCCharVector data_;
-  typedef std::deque<int> Items;
-  Items items_;
+  IPCIntVector items_;
 
   State state_;
   int e_count_;
