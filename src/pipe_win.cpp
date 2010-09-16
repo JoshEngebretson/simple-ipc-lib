@@ -17,25 +17,27 @@
 namespace {
 const wchar_t kPipePrefix[] = L"\\\\.\\pipe\\";
 const int kPipeBufferSz = 4 * 1024;
+}  // namespace
 
 LONG g_pipe_seq = 0;
 
-HANDLE OpenPipeServer(const wchar_t* name) {
+HANDLE PipePair::OpenPipeServer(const wchar_t* name) {
   IPCWString pipename(kPipePrefix);
   pipename.append(name);
-  return ::CreateNamedPipeW(pipename.c_str(), PIPE_ACCESS_DUPLEX,
+  return ::CreateNamedPipeW(pipename.c_str(), PIPE_ACCESS_DUPLEX | FILE_FLAG_FIRST_PIPE_INSTANCE,
                             PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_WAIT,
                             1, kPipeBufferSz, kPipeBufferSz, 200, NULL);
 }
 
-HANDLE OpenPipeClient(const wchar_t* name, bool inherit) {
+HANDLE PipePair::OpenPipeClient(const wchar_t* name, bool inherit, bool impersonate) {
   IPCWString pipename(kPipePrefix);
   pipename.append(name);
 
   SECURITY_ATTRIBUTES sa = {sizeof(sa), NULL, inherit ? TRUE : FALSE};
   for (;;) {
+    DWORD attributes = impersonate ? 0 : SECURITY_SQOS_PRESENT | SECURITY_IDENTIFICATION;
     HANDLE pipe = ::CreateFileW(pipename.c_str(), GENERIC_READ | GENERIC_WRITE, 0, &sa,
-                                OPEN_EXISTING, SECURITY_SQOS_PRESENT | SECURITY_IDENTIFICATION, NULL);
+                                OPEN_EXISTING, attributes, NULL);
     if (INVALID_HANDLE_VALUE == pipe) {
       if (ERROR_PIPE_BUSY != ::GetLastError()) {
         return pipe;
@@ -49,20 +51,19 @@ HANDLE OpenPipeClient(const wchar_t* name, bool inherit) {
   }
 }
 
-}  // namespace
-
 
 PipePair::PipePair(bool inherit_fd2) : srv_(NULL), cln_(NULL) {
   // Come up with a reasonable unique name.
   const wchar_t kPipePattern[] = L"ko.%x.%x.%x";
   wchar_t name[8*3 + sizeof(kPipePattern)];
-  ::InterlockedIncrement(&g_pipe_seq);
-  ::wsprintfW(name, kPipePattern, ::GetCurrentProcessId(), ::GetTickCount(), g_pipe_seq);
+  ::wsprintfW(name, kPipePattern, ::GetCurrentProcessId(), ::GetTickCount(), 
+              ::InterlockedIncrement(&g_pipe_seq));
   HANDLE server = OpenPipeServer(name);
   if (INVALID_HANDLE_VALUE == server) {
     return;
   }
-  HANDLE client = OpenPipeClient(name, inherit_fd2);
+  // Don't allow client impersonation.
+  HANDLE client = OpenPipeClient(name, inherit_fd2, false);
   if (INVALID_HANDLE_VALUE == client) {
     ::CloseHandle(server);
     return;
@@ -95,8 +96,16 @@ bool PipeWin::OpenClient(HANDLE pipe) {
   return true;
 }
 
-bool PipeWin::OpenServer(HANDLE pipe) {
+bool PipeWin::OpenServer(HANDLE pipe, bool connect) {
   pipe_ = pipe;
+
+  if (connect) {
+    if (!::ConnectNamedPipe(pipe, NULL)) {
+      if (ERROR_PIPE_CONNECTED != ::GetLastError()) {
+        return false;
+      }
+    }
+  }
   return true;
 }
 
