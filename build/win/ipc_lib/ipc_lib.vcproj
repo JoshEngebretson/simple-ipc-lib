@@ -285,6 +285,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\..\src\ipc_constants.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\..\src\ipc_msg_dispatch.h"
 				>
 			</File>
