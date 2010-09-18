@@ -16,6 +16,7 @@
 #define SIMPLE_IPC_PIPE_WIN_H_
 
 #include "os_includes.h"
+#include "ipc_constants.h"
 
 class PipePair {
 public:
@@ -54,7 +55,7 @@ public:
   static const size_t kBufferSz = 4096;
 
   size_t Send(const void* buf, size_t sz) {
-    return Write(buf, sz) ? 0 : -1;
+    return Write(buf, sz) ? ipc::RcOK : ipc::RcErrTransportWrite;
   }
 
   char* Receive(size_t* size);

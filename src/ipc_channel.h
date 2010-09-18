@@ -15,6 +15,7 @@
 #ifndef SIMPLE_IPC_CHANNEL_H_
 #define SIMPLE_IPC_CHANNEL_H_
 
+#include "ipc_constants.h"
 #include "ipc_utils.h"
 #include "ipc_wire_types.h"
 
@@ -64,7 +65,11 @@ template <class TransportT, class EncoderT, template <class> class DecoderT>
 class Channel {
  public:
   static const size_t kMaxNumArgs = 10;
-  Channel(TransportT* transport) : transport_(transport) {}
+  Channel(TransportT* transport) : transport_(transport), last_msg_id_(-1) {}
+
+  // This is the last message that was received. Or at least the header was
+  // correct so we could extract the message id.
+  int LastRecvMsgId() const { return last_msg_id_; }
 
   // Sends the message (|args| + msg_id) to the other end of the connected
   // |transport| passed to the constructor. This call can block or not depending
@@ -72,18 +77,18 @@ class Channel {
   size_t Send(int msg_id, const WireType* const args[], int n_args)  {
     EncoderT encoder;
     encoder.Open(n_args);
-    for (int ix= 0; ix != n_args; ++ix) {
+    for (int ix = 0; ix != n_args; ++ix) {
       AddMsgElement(&encoder, *args[ix]);
     }
 
     encoder.SetMsgId(msg_id);
     if (!encoder.Close())
-      return static_cast<size_t>(-1);
+      return RcErrEncoderClose;
 
     size_t size;
     const void* buf = encoder.GetBuffer(&size);
     if (!buf)
-      return static_cast<size_t>(-2);
+      return RcErrEncoderBuffer;
     return transport_->Send(buf, size);
   }
 
@@ -112,19 +117,21 @@ class Channel {
           buf = transport_->Receive(&received);
           if (!buf) {
             // read failed.
-            return static_cast<size_t>(-1);
+            return RcErrTransportRead;
           }
         } else {
           buf = NULL;
         }
       } while (decoder.OnData(buf, received));
 
+      last_msg_id_ = handler.MsgId();
+
       if(!decoder.Success())
-        return static_cast<size_t>(-2);
+        return RcErrDecoderFormat;
 
       size_t np = handler.GetArgCount();
       if (np > kMaxNumArgs)
-        return static_cast<size_t>(-3);
+        return RcErrDecoderArgs;
 
       const WireType* args[kMaxNumArgs];
       for (size_t ix = 0; ix != np; ++ix) {
@@ -277,6 +284,7 @@ private:
   }
 
   TransportT* transport_;
+  int last_msg_id_;
 };
 
 }  // namespace ipc.
