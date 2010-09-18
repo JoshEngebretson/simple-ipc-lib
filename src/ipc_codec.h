@@ -87,14 +87,14 @@ public:
   bool OnString8(const IPCString& s, int tag) {
     SetHeaderNext(tag | ENC_STRN08);
     PushBack(s.size());
-    AddStr(s);
+    if (s.size()) AddStr(s);
     return true;
   }
 
   bool OnString16(const IPCWString& s, int tag) {
     SetHeaderNext(tag | ENC_STRN16);
     PushBack(s.size());
-    AddStr(s);
+    if (s.size()) AddStr(s);
     return true;
   }
 
@@ -140,7 +140,8 @@ private:
     do {
       int v = 0;
       for (int ix = 0; ix != times; ++ix) {
-        if (it == s.size()) break;
+        if (it == s.size())
+          break;
         v |= (s[it]) << ix * sizeof(typename StringT::value_type) * 8;
         ++it;
       }

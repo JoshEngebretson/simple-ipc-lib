@@ -75,15 +75,17 @@ int TestDispatchRoundTrip() {
   
   TestTransport transport;
   TestChannel channel(&transport);
-  TestMessage3 msg3;
 
-  msg3.DoSend(&channel, ix, tx);
+  {
+    TestMessage3 msg3;
+    msg3.DoSend(&channel, ix, tx);
 
-  DispTestMsg3 disp3;
-  if (channel.Receive(&disp3) != 77)
-    return 1;
-  if (disp3.HasConvertError() || disp3.HasArgCountError())
-    return 2;
+    DispTestMsg3 disp3;
+    if (channel.Receive(&disp3) != 77)
+      return 1;
+    if (disp3.HasConvertError() || disp3.HasArgCountError())
+      return 2;
+  }
 
   return 0;
 }

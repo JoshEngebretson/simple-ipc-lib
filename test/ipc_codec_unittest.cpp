@@ -336,3 +336,51 @@ int TestCodecRaw5() {
 
   return 0;
 }
+
+int TestCodedRaw6() {
+  const wchar_t tx[]=L"";
+
+  TestTransport transport;
+  TestChannel channel(&transport);
+  TestMessage14 msg14;
+  msg14.DoSend(&channel, tx);
+
+  D2V fmt [] = {
+    D2V(ipc::Encoder::ENC_HEADER),          // start of header mark
+    D2V(14),                                // msg id
+    D2V(1),                                 // arg count
+    D2V(8),                                 // data count
+    D2V(ipc::TYPE_STRING16 |
+        ipc::Encoder::ENC_STRN16),          // first arg type
+    D2V(ipc::Encoder::ENC_STARTD),          // start of data mark
+    D2V(0),                                 // string size count
+    D2V(ipc::Encoder::ENC_ENDDAT)           // end of data mark
+  };
+
+  int rv = TestIPCBuffer(&transport, fmt, sizeof(fmt)/sizeof(fmt[0]));
+  if (rv != 0)
+    return rv;
+
+  size_t size = 0;
+  const char* data = transport.Receive(&size);
+
+  TestChannel::RxHandler rx;
+  ipc::Decoder<TestChannel::RxHandler> dec(&rx);
+  dec.OnData(data, size);
+
+  if (!dec.Success())
+    return -1;
+  if (rx.MsgId() != 14)
+    return -2;
+  if (rx.GetArgCount() != 1)
+    return -3;
+  if (rx.GetArg(0).Id() != ipc::TYPE_STRING16)
+    return -4;
+
+  IPCWString str;
+  rx.GetArg(0).GetString16(&str);
+  if (str != L"")
+    return -5;
+
+  return 0;
+}

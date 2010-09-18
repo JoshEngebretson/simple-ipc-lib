@@ -249,7 +249,7 @@ private:
 // One trick one should be aware on this class is that leverages the fact that
 // PodVector overallocates always. So it is safe to write to str_[size_] for
 // example to null terminate.
-template <typename Ct>
+template <typename Ct, typename Derived>
 class StringBase {
 public:
   typedef Ct value_type;
@@ -258,7 +258,7 @@ public:
     assign(rhs.str_.get(), rhs.str_.size());
   }
 
-  StringBase<Ct>& operator=(const StringBase<Ct>& rhs) {
+  StringBase<Ct, Derived>& operator=(const StringBase<Ct, Derived>& rhs) {
     assign(rhs.str_.get(), rhs.str_.size());
     return *this;
   }
@@ -273,16 +273,16 @@ public:
     return str_.size();
   }
 
-  void swap(StringBase<Ct>& other) {
+  void swap(StringBase<Ct, Derived>& other) {
     str_.Swap(other.str_);
   }
 
   bool operator==(const Ct* rhs) const {
-    return (0 == Compare(rhs));
+    return (0 == static_cast<const Derived*>(this)->Compare(rhs));
   }
 
   bool operator!=(const Ct* rhs) const {
-    return (0 != Compare(rhs));
+    return (0 != static_cast<const Derived*>(this)->Compare(rhs));
   }
 
   Ct& operator[](size_t ix) {
@@ -298,14 +298,6 @@ public:
 protected:
   StringBase() {}
 
-  int Compare(const char* str) const {
-    return strcmp(str_.get(), str);
-  }
-
-  int Compare(const wchar_t* str) const {
-    return wcscmp(str_.get(), str);
-  }
-
   PodVector<Ct> str_;
 };
 
@@ -316,7 +308,7 @@ class HolderString;
 // have enough functionality to replace (if desired) the use of the
 // standard basic_string.
 template <>
-class HolderString<char> : public StringBase<char> {
+class HolderString<char> : public StringBase<char, HolderString<char> > {
 public:
   HolderString() {}
 
@@ -338,11 +330,15 @@ public:
       return "";
     return str_.get(); 
   }
+
+  int Compare(const char* str) const {
+    return strcmp(c_str(), str);
+  }
   
 };
 
 template <>
-class HolderString<wchar_t> : public StringBase<wchar_t> {
+class HolderString<wchar_t> : public StringBase<wchar_t, HolderString<wchar_t> > {
 public:
   HolderString() {}
 
@@ -363,6 +359,10 @@ public:
     if (!str_.get())
       return L"";
     return str_.get(); 
+  }
+
+  int Compare(const wchar_t* str) const {
+    return wcscmp(c_str(), str);
   }
 };
 

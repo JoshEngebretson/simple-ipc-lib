@@ -248,6 +248,8 @@ int TestStringImpl(const ChT (&txt)[N1], const ChT (&tzt)[N2], const ChT (&non)[
       return 1;
     if (StringCompare(str.c_str(), non))
       return 2;
+    if (str != non)
+      return 3;
   }
 
   {

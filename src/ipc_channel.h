@@ -141,15 +141,6 @@ class Channel {
     return retv;
   }
 
-  // $$ for testing only. Remove it a some point.
-  template <class DispatchT>
-  size_t ReceiveLocal(DispatchT* top_dispatch, int msg_id) {
-    WireType a(int(1));
-    WireType b(int(2));
-    const WireType* args[2] = {&a, &b};
-    return top_dispatch->MsgHandler(msg_id)->OnMsgIn(msg_id, this, args, 2);
-  }
-
   // This class is using during receiving as the callback handler for the decoder.
   // Its function is to receive each decoded type and transform it into WireType objects.
   //
