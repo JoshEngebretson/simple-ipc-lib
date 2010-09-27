@@ -29,8 +29,20 @@ public:
     u_.uv = v;
   }
 
+  explicit D2V(long v) {
+    u_.lv = v;
+  }
+
+  explicit D2V(unsigned long v) {
+    u_.ulv = v;
+  }
+
   explicit D2V(const char* c) {
     memcpy(u_.cv, c, sizeof(u_.cv));
+  }
+
+  explicit D2V(const void* p) {
+    u_.pv = const_cast<void*>(p);
   }
 
   const std::vector<char> Vec() const { 
@@ -44,6 +56,9 @@ private:
     char cv[sizeof(int)];
     int iv;
     unsigned int uv;
+    long lv;
+    unsigned long ulv;
+    void* pv;
   } u_;
 };
 
@@ -337,7 +352,7 @@ int TestCodecRaw5() {
   return 0;
 }
 
-int TestCodedRaw6() {
+int TestCodecRaw6() {
   const wchar_t tx[]=L"";
 
   TestTransport transport;
@@ -381,6 +396,60 @@ int TestCodedRaw6() {
   rx.GetArg(0).GetString16(&str);
   if (str != L"")
     return -5;
+
+  return 0;
+}
+
+int TestCodecRaw7() {
+  void* pv = reinterpret_cast<void*>(0x55aa5533);
+  unsigned long ul = 9876534;
+  long ll = 127;
+
+  TestTransport transport;
+  TestChannel channel(&transport);
+  TestMessage15 msg15;
+  msg15.DoSend(&channel, pv, ul, ll);
+
+  D2V fmt [] = {
+    D2V(ipc::Encoder::ENC_HEADER),          // start of header mark
+    D2V(15),                                // msg id
+    D2V(3),                                 // arg count
+    D2V(12),                                 // data count
+    D2V(ipc::TYPE_VOIDPTR),
+    D2V(ipc::TYPE_ULONG32),
+    D2V(ipc::TYPE_LONG32),
+    D2V(ipc::Encoder::ENC_STARTD),          // start of data mark
+    D2V(pv),
+    D2V(ul),
+    D2V(ll),
+    D2V(ipc::Encoder::ENC_ENDDAT)           // end of data mark
+  };
+
+  int rv = TestIPCBuffer(&transport, fmt, sizeof(fmt)/sizeof(fmt[0]));
+  if (rv != 0)
+    return rv;
+
+  size_t size = 0;
+  const char* data = transport.Receive(&size);
+
+  TestChannel::RxHandler rx;
+  ipc::Decoder<TestChannel::RxHandler> dec(&rx);
+  dec.OnData(data, size);
+
+  if (!dec.Success())
+    return -1;
+  if (rx.MsgId() != 15)
+    return -2;
+  if (rx.GetArgCount() != 3)
+    return -3;
+  if (rx.GetArg(0).Id() != ipc::TYPE_VOIDPTR)
+    return -5;
+  if (rx.GetArg(1).Id() != ipc::TYPE_ULONG32)
+    return -6;
+  if (rx.GetArg(2).Id() != ipc::TYPE_LONG32)
+    return -7;
+  if (rx.GetArg(0).GetAsBits() != pv)
+    return -8;
 
   return 0;
 }

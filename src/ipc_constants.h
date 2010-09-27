@@ -23,7 +23,7 @@ namespace ipc {
 const size_t RcOK                   = 0;
 const size_t RcErrEncoderClose      = static_cast<size_t>(-1);
 const size_t RcErrEncoderBuffer     = static_cast<size_t>(-2);
-const size_t RcErrEncoderInternal   = static_cast<size_t>(-3);
+const size_t RcErrEncoderType       = static_cast<size_t>(-3);
 const size_t RcErrTransportWrite    = static_cast<size_t>(-4);
 const size_t RcErrTransportRead     = static_cast<size_t>(-5);
 const size_t RcErrTransportConnect  = static_cast<size_t>(-6);

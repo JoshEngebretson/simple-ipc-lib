@@ -302,7 +302,9 @@ private:
           ReadNextStr16(tag);
         } else {
           --d_count_;
-          handler_->OnWord(ReadNextVoidPtr(), tag);
+          if (!handler_->OnWord(ReadNextVoidPtr(), tag)) {
+            return DEC_ERROR;
+          }
         }
         ++ix;
         if (items_.size() == ix) {

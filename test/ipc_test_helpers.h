@@ -126,5 +126,11 @@ public:
   }
 };
 
+class TestMessage15: public ipc::MsgOut<TestChannel> {
+public:
+  size_t DoSend(TestChannel* ch, void* a, unsigned long b, long c) {
+    return SendMsg(15, ch, a, b, c);
+  }
+};
 
 #endif  // SIMPLE_IPC_TEST_HELPERS_H_

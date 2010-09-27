@@ -42,7 +42,7 @@ public:
 
 DEFINE_IPC_MSG_CONV(4, 2) {
   IPC_MSG_P1(const wchar_t*, String16)
-    IPC_MSG_P2(ipc::ByteArray, ByteArray)
+  IPC_MSG_P2(ipc::ByteArray, ByteArray)
 };
 
 class WriteFileMsgSend : public ipc::MsgOut<PipeChannel> {

@@ -33,9 +33,6 @@
 // a message id. The encoder and decoder are loosely coupled with the message and it is the job
 // of the channel to interface them.
 //
-// But there is one special case, when the value to transfer is a OS resource, like a windows
-// handle or a unix file descriptor.
-//
 // Sending Requirements
 //  Encoder should implement:
 //    bool Open(int n_args)
@@ -78,7 +75,8 @@ class Channel {
     EncoderT encoder;
     encoder.Open(n_args);
     for (int ix = 0; ix != n_args; ++ix) {
-      AddMsgElement(&encoder, *args[ix]);
+      if (!AddMsgElement(&encoder, *args[ix]))
+        return RcErrEncoderType;
     }
 
     encoder.SetMsgId(msg_id);
@@ -165,7 +163,7 @@ class Channel {
       return true;
     }
 
-    // Handles the word-sized decoded types.
+    // Handles the word-sized 'value' decoded types.
     bool OnWord(const void* bits, int type_id) {
       switch (type_id) {
         case ipc::TYPE_INT32:
@@ -174,11 +172,21 @@ class Channel {
         case ipc::TYPE_UINT32:
           list_.push_back(WireType(*reinterpret_cast<const unsigned int*>(bits)));
           break;
+        case ipc::TYPE_LONG32:
+          list_.push_back(WireType(*reinterpret_cast<const long*>(bits)));
+          break;
+        case ipc::TYPE_ULONG32:
+          list_.push_back(WireType(*reinterpret_cast<const unsigned long*>(bits)));
+          break;
         case ipc::TYPE_CHAR8:
           list_.push_back(WireType(*reinterpret_cast<const char*>(bits)));
           break;
         case ipc::TYPE_CHAR16:
           list_.push_back(WireType(*reinterpret_cast<const wchar_t*>(bits)));
+          break;
+        case ipc::TYPE_VOIDPTR:
+          list_.push_back(WireType(reinterpret_cast<const void*>(
+              *reinterpret_cast<const unsigned long*>(bits))));
           break;
         case ipc::TYPE_NULLSTRING8:
           list_.push_back(WireType(static_cast<char*>(NULL)));
@@ -252,7 +260,10 @@ private:
       case ipc::TYPE_UINT32:
       case ipc::TYPE_CHAR8:
       case ipc::TYPE_CHAR16:
-        return encoder->OnWord(wtype.GetAsBits(), wtype.Id());
+      case ipc::TYPE_LONG32:
+      case ipc::TYPE_ULONG32:
+      case ipc::TYPE_VOIDPTR:
+          return encoder->OnWord(wtype.GetAsBits(), wtype.Id());
 
       case ipc::TYPE_STRING8:
       case ipc::TYPE_BARRAY: {
@@ -271,12 +282,6 @@ private:
       case ipc::TYPE_NULLSTRING16:
       case ipc::TYPE_NULLBARRAY:
         return encoder->OnWord(wtype.GetAsBits(), wtype.Id());
-
-      case ipc::TYPE_UNIX_FD:
-        return encoder->OnUnixFd(wtype.GetUnixFD(), wtype.Id());
-
-      case ipc::TYPE_WIN_HANDLE:
-        return encoder->OnWinHandle(wtype.GetWinHandle(), wtype.Id());
 
       default:
         return false;
