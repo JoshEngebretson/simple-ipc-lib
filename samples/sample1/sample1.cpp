@@ -128,6 +128,9 @@ LRESULT __stdcall WndProc(HWND window, UINT message, WPARAM wparam, LPARAM lpara
           return ::DefWindowProc(window, message, wparam, lparam);
 		  }
 		  break;
+    case WM_CLOSE:
+      ::DestroyWindow(window);
+      break;
     case WM_PAINT:
       PaintMainWindow(::BeginPaint(window, &ps), &ps);
       ::EndPaint(window, &ps);

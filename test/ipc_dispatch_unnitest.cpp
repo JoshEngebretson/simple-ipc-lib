@@ -39,7 +39,7 @@ class DispTestMsg3 : public DispTestMsg,
                      public ipc::MsgIn<3, DispTestMsg3, TestChannel> {
 public:
   size_t OnMsg(TestChannel*, int ix, const char* tx) {
-    return ((ix == 56789) && (IPCString(tx) == "1234")) ? 77: 0;
+    return ((ix == 56789) && (IPCString(tx) == "1234")) ? 77: ipc::OnMsgReady;
   }
 };
 

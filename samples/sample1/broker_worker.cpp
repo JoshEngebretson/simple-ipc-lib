@@ -11,21 +11,21 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+#include <windows.h>
+#include <wininet.h>
 
 #include "broker_worker.h"
+#include "shared_ipc_defs.h"
+#include "wininet_broker.h"
 
 const wchar_t kCmdLinePipeEq[] = L" --ipc=";
 
+const int kWriteFileSend = 4;
 
-typedef ipc::Channel<PipeTransport, ipc::Encoder, ipc::Decoder> PipeChannel;
+typedef ActualChannelT PipeChannel;
 
-
-class BaseMsgHandler {
+class MessageHandler : public MsgHandlerBaseT {
 public:
-  virtual size_t OnMsgIn(int msg_id, PipeChannel* ch,
-                         const ipc::WireType* const args[], 
-                         int count) = 0;
-
   bool OnMsgArgCountError(int /*count*/) {
     return false;
   }
@@ -40,7 +40,7 @@ public:
 // 1p : Filename
 // 2p : string to write
 
-DEFINE_IPC_MSG_CONV(4, 2) {
+DEFINE_IPC_MSG_CONV(kWriteFileSend, 2) {
   IPC_MSG_P1(const wchar_t*, String16)
   IPC_MSG_P2(ipc::ByteArray, ByteArray)
 };
@@ -48,11 +48,11 @@ DEFINE_IPC_MSG_CONV(4, 2) {
 class WriteFileMsgSend : public ipc::MsgOut<PipeChannel> {
 public:
   size_t Send(PipeChannel* ch, const wchar_t* fname, const char* buf, const size_t sz) {
-    return SendMsg(4, ch, fname, ipc::ByteArray(sz, buf));
+    return SendMsg(kWriteFileSend, ch, fname, ipc::ByteArray(sz, buf));
   }
 };
 
-class WriteFileMsgRecv : public BaseMsgHandler, public ipc::MsgIn<4, WriteFileMsgRecv, PipeChannel> {
+class WriteFileMsgRecv : public MessageHandler, public ipc::MsgIn<kWriteFileSend, WriteFileMsgRecv, PipeChannel> {
 public:
   WriteFileMsgRecv(Broker* broker) : broker_(broker) {
   }
@@ -67,7 +67,7 @@ public:
     }
     // Write file here.
     broker_->LogCall(Broker::FILES);
-    return 0;
+    return ipc::OnMsgLoopNext;
   }
 
 private:
@@ -76,7 +76,7 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-class BadMessageRecv : public BaseMsgHandler {
+class BadMessageRecv : public MessageHandler {
 public:
   virtual size_t OnMsgIn(int /*msg_id*/, PipeChannel* /*ch*/, const ipc::WireType* const args[], int /*count*/) {
     args;
@@ -92,11 +92,14 @@ public:
     : write_file_(broker), bad_msg_() {
   }
 
-  BaseMsgHandler* MsgHandler(int msg_id) {
-    if (4 == msg_id) {
+  MsgHandlerBaseT* MsgHandler(int msg_id) {
+    if (kWriteFileSend == msg_id) {
       return &write_file_;
     } else {
-      return &bad_msg_;
+      MsgHandlerBaseT* net = remote::InternetBrokerMessage(msg_id);
+      if (net)
+        return net;
+      else return &bad_msg_;
     }
   }
 
@@ -181,11 +184,11 @@ DWORD Broker::ServiceThread(Context* ctx) {
     return 2;
   }
 
+  remote::InternetStartBroker(&transport);
+
   MsgDispatch top_dispatch(this);
   // To quickly test use channel.ReceiveLocal(&top_dispatch, 4) here.
-  for (;;) {
-    if (0 != channel.Receive(&top_dispatch)) break;
-  }
+  channel.Receive(&top_dispatch);
   return 0;
 }
 
@@ -213,6 +216,8 @@ bool Worker::ConnectToBroker(const wchar_t *cmdline) {
     return false;
   }
 
+  remote::InternetSetIPCTransport(&transport_);
+  InternetHandle ih = remote::InternetOpenA("ipcTest1", INTERNET_OPEN_TYPE_PRECONFIG, NULL, NULL, 0); 
   return true;
 }
 

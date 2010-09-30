@@ -94,6 +94,14 @@ class Channel {
   // |transport| passed in the constructor. If a valid message is received
   // the function calls |top_dispatch| and then returns with the return
   // value of |top_dispatch|.
+  //
+  // Depending on the value returned by the message handler, this function
+  // loops again (if return is 0) or finishes (return non-zero), so by necessity
+  // this function never returns 0.
+  //
+  // The costume is to use ipc::OnMsgLoopNext (0) to loop and ipc::OnMsgReady (1)
+  // to terminate with no error condtion. This is desirable but not necessary.
+  //
   template <class DispatchT>
   size_t Receive(DispatchT* top_dispatch) {
 
@@ -141,7 +149,7 @@ class Channel {
 
       handler.Clear();
       decoder.Reset();
-    } while(0 == retv);
+    } while(ipc::OnMsgLoopNext == retv);
 
     return retv;
   }

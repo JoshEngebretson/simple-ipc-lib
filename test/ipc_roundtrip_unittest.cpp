@@ -91,9 +91,8 @@ public:
   bool Loop() {
     if (!transport_.IsConnected())
       return false;
-    for (;;) {
-      if (0 != channel_.Receive(this)) break;
-    }
+
+    channel_.Receive(this);
     return true;
   }
 
@@ -102,8 +101,8 @@ public:
     SumMultOddSendM29 msg;
     temp_ = "Rpc:";
     if (msg.Send(&channel_, ComputeOddStuff(x, y)) != 0)
-      return false;
-    return 0;
+      return ipc::OnMsgAppErrorBase;
+    return ipc::OnMsgLoopNext;
   }
 
 private:
@@ -123,6 +122,7 @@ private:
     return temp_.c_str();
   }
 
+  int vv;
   IPCString temp_;
   PipeChannel channel_;
   PipeTransport transport_;
@@ -145,7 +145,7 @@ public:
     SumMultOddSendM28 msg;
     if (msg.Send(&channel_, x, y) != 0)
       return false;
-    if (channel_.Receive(this) != 3)
+    if (channel_.Receive(this) != ipc::OnMsgReady)
       return false;
     answer->swap(ans_);
     return true;
@@ -154,9 +154,9 @@ public:
   // Called when the appropiate message (reply) arrives from the server.
   size_t OnMsg(PipeChannel*, const char* ans) {
     if (!ans)
-      return static_cast<size_t>(-1);
+      return ipc::OnMsgAppErrorBase;
     ans_ = ans;
-    return 3;
+    return ipc::OnMsgReady;
   }
 
 private:

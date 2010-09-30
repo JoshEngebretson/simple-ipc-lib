@@ -15,10 +15,10 @@
 #ifndef SIMPLE_IPC_CONSTANTS_H_
 #define SIMPLE_IPC_CONSTANTS_H_
 
-// No error is always 0. Positive errors are reserved for the application
-// while negative errors are reserved for the IPC library.
-
 namespace ipc {
+
+// No error is always 0. Positive values are reserved for the application
+// while negative errors are reserved for the IPC library.
 
 const size_t RcOK                   = 0;
 const size_t RcErrEncoderClose      = static_cast<size_t>(-1);
@@ -29,6 +29,25 @@ const size_t RcErrTransportRead     = static_cast<size_t>(-5);
 const size_t RcErrTransportConnect  = static_cast<size_t>(-6);
 const size_t RcErrDecoderFormat     = static_cast<size_t>(-7);
 const size_t RcErrDecoderArgs       = static_cast<size_t>(-8);
+
+// For the return on obj.OnMsg() when calling Channel::Receive(obj) there
+// are two critical values:
+// - OnMsgLoopNext:  typically always returned by the server OnMsg()
+//                   so it goes to process the next message
+// - OnMsgAppErrorBase: typically always returned by the client OnMsg()
+//                   so Receive() exits.
+//
+const size_t OnMsgLoopNext      = 0;  // Loop again and read another message.
+const size_t OnMsgReady         = 1;  // Done receiving.
+const size_t OnMsgAppErrorBase  = 2;  // Application specific errors start here.
+
+// It is important to note that OnMsgLoopNext is 0 which is also RcOK. This
+// enables the following server (broker) side pattern
+//
+//  size_t OnMsg(ChannelT* ch, param1, param2,...) {
+//    ... operation here
+//    return SendMsg(kRepyId, ch, result1, ..);
+//  }
 
 }  // namespace ipc.
 

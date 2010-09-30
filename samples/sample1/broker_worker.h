@@ -17,10 +17,8 @@
 
 #include "winheaders.h"
 
-#include "..\..\src\ipc_channel.h"
 #include "..\..\src\pipe_win.h"
-#include "..\..\src\ipc_codec.h"
-#include "..\..\src\ipc_msg_dispatch.h"
+
 
 class Broker {
 public:

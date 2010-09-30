@@ -191,7 +191,19 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\..\samples\sample1\shared_ipc_defs.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\..\samples\sample1\winheaders.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\samples\sample1\wininet_broker.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\samples\sample1\wininet_broker.h"
 				>
 			</File>
 		</Filter>
