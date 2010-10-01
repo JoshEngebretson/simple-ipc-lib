@@ -183,7 +183,7 @@ class WireType : public MultiType {
     return store.v_wchar;
   }
 
-  const void* RecoverVoidPtr() const {
+  void* RecoverVoidPtr() const {
     if (Id() != ipc::TYPE_VOIDPTR) throw int (ipc::TYPE_VOIDPTR);
     return store.v_pvoid;
   }

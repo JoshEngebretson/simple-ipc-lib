@@ -44,6 +44,8 @@ public:
     enum { value = v };
   };
 
+  enum { MSG_ID = MsgId };
+
   typedef MsgParamConverter<MsgId> PC;
 
   size_t OnMsgIn(int msg_id, ChannelT* ch, const WireType* const args[], int count) {
