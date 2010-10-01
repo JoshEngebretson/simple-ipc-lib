@@ -13,6 +13,7 @@
 // limitations under the License.
 #include <windows.h>
 #include <wininet.h>
+#include <stack>
 
 #include "broker_worker.h"
 #include "shared_ipc_defs.h"
@@ -202,6 +203,29 @@ long Broker::GetNumCallsPerArea(Broker::PolicyArea /*pa*/) {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
 
+class InternetHandleTracker {
+public:
+  ~InternetHandleTracker() {
+    while(!handles_.empty()) {
+      remote::InternetCloseHandle(handles_.top());
+      handles_.pop();
+    }
+  }
+
+  void track(HINTERNET handle) {
+    handles_.push(handle);
+  }
+
+private:
+  std::stack<HINTERNET> handles_;
+};
+
+
+Worker::~Worker() {
+  if (internet_) {
+    remote::InternetCloseHandle(internet_);
+  }
+}
 
 bool Worker::ConnectToBroker(const wchar_t *cmdline) {
   std::wstring cmd_line(cmdline);
@@ -217,7 +241,7 @@ bool Worker::ConnectToBroker(const wchar_t *cmdline) {
   }
 
   remote::InternetSetIPCTransport(&transport_);
-  InternetHandle ih = remote::InternetOpenA("ipcTest1", INTERNET_OPEN_TYPE_PRECONFIG, NULL, NULL, 0); 
+  internet_ = remote::InternetOpenA("ipcTest1", INTERNET_OPEN_TYPE_PRECONFIG, NULL, NULL, 0); 
   return true;
 }
 
@@ -225,4 +249,46 @@ bool Worker::WriteFileStr(const std::string& str) {
   PipeChannel channel(&transport_);
   WriteFileMsgSend msg;
   return (0 == msg.Send(&channel, L"file_one.txt", str.data(), str.size()));
+}
+
+bool  Worker::ReadWebPage(const char* host, std::string* page) {
+  if (!internet_)
+    return false;
+
+  InternetHandleTracker tracker;
+  HINTERNET conn = remote::InternetConnectA(internet_,
+                                            host,
+                                            80,
+                                            NULL, NULL,
+                                            INTERNET_SERVICE_HTTP,
+                                            0, 
+                                            0);
+  if (!conn)
+    return false;
+  tracker.track(conn);
+
+  DWORD request_flags = INTERNET_FLAG_IGNORE_REDIRECT_TO_HTTP |
+                        INTERNET_FLAG_IGNORE_REDIRECT_TO_HTTPS |
+                        INTERNET_FLAG_KEEP_CONNECTION |
+                        INTERNET_FLAG_NO_AUTH |                       
+                        INTERNET_FLAG_NO_COOKIES |
+                        INTERNET_FLAG_NO_UI;
+
+  HINTERNET req = remote::HttpOpenRequestA(conn,
+                                           "GET",
+                                           "/",
+                                           NULL,
+                                           NULL,
+                                           NULL,
+                                           request_flags,
+                                           0);
+
+  if (!req)
+    return false;
+  tracker.track(req);
+
+
+
+  *page += "foo";
+  return true;
 }

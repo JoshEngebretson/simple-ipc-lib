@@ -14,9 +14,9 @@
 
 
 #include <windows.h>
-#include "shared_ipc_defs.h"
+#include <wininet.h>
 
-typedef const void* InternetHandle;
+#include "shared_ipc_defs.h"
 
 namespace remote {
 
@@ -26,7 +26,7 @@ bool InternetStartBroker(ActualTransportT* transport);
 MsgHandlerBaseT* InternetBrokerMessage(int msg_id);
 
 
-InternetHandle __stdcall InternetOpenA(
+HINTERNET __stdcall InternetOpenA(
       LPCSTR lpszAgent,
       DWORD dwAccessType,
       LPCSTR lpszProxy,
@@ -34,10 +34,10 @@ InternetHandle __stdcall InternetOpenA(
       DWORD dwFlags);
 
 BOOL __stdcall InternetCloseHandle(
-      InternetHandle hInternet);
+      HINTERNET hInternet);
 
-InternetHandle __stdcall InternetConnectA(
-      InternetHandle hInternet,
+HINTERNET __stdcall InternetConnectA(
+      HINTERNET hInternet,
       LPCSTR lpszServerName,
       WORD nServerPort,
       LPCSTR lpszUserName,
@@ -46,6 +46,28 @@ InternetHandle __stdcall InternetConnectA(
       DWORD dwFlags,
       DWORD_PTR dwContext);
 
+HINTERNET __stdcall HttpOpenRequestA(
+      HINTERNET hConnect,
+      LPCSTR lpszVerb,
+      LPCSTR lpszObjectName,
+      LPCSTR lpszVersion,
+      LPCSTR lpszReferrer,
+      LPCSTR FAR * lplpszAcceptTypes,
+      DWORD dwFlags,
+      DWORD_PTR dwContext);
 
+BOOL __stdcall HttpSendRequestA(
+      HINTERNET hRequest,
+      LPCSTR lpszHeaders,
+      DWORD dwHeadersLength,
+      LPVOID lpOptional,
+      DWORD dwOptionalLength);
+
+BOOL __stdcall HttpSendRequestExA(
+      HINTERNET hRequest,
+      LPINTERNET_BUFFERSA lpBuffersIn,
+      LPINTERNET_BUFFERSA lpBuffersOut,
+      DWORD dwFlags,
+      DWORD_PTR dwContext);
 
 }  // namespace remote

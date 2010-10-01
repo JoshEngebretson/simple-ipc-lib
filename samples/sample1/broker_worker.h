@@ -59,12 +59,19 @@ private:
   long calls_;
 };
 
+
 class Worker {
 public:
+  Worker() : internet_(0) {}
+  ~Worker();
+
   bool ConnectToBroker(const wchar_t* cmdline);
 
   bool WriteFileStr(const std::string& str);
 
+  bool ReadWebPage(const char* url, std::string* page);
+
 private:
   PipeTransport transport_;
+  void* internet_;
 };
