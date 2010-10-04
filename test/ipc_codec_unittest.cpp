@@ -279,7 +279,7 @@ int TestCodecRaw4() {
         ipc::Encoder::ENC_STRN08),
     D2V(ipc::TYPE_INT32),                // second arg type
     D2V(ipc::Encoder::ENC_STARTD),       // start of data mark
-    D2V(int(sizeof(arr))),               // size of frist arg
+    D2V(int(sizeof(arr))),               // size of first arg
     D2V(chk1),                           // first argument
     D2V(chk2),
     D2V(chk3),
@@ -450,6 +450,50 @@ int TestCodecRaw7() {
     return -7;
   if (rx.GetArg(0).GetAsBits() != pv)
     return -8;
+
+  return 0;
+}
+
+int TestCodecRaw8() {
+  // the z value contains 0xea which expands to 0xffffffea by C++ promotion rules,
+  // which tickled a bug in the codec's AddStr() code.
+  unsigned int z = 59952;
+  int b = 44;
+
+  TestTransport transport;
+  TestChannel channel(&transport);
+  TestMessage12 msg12;
+
+  msg12.DoSend(&channel, (char*)&z, sizeof(z), b);
+
+  D2V fmt [] = {
+    D2V(ipc::Encoder::ENC_HEADER),       // start of header mark
+    D2V(12),                             // msg id
+    D2V(2),                              // arg count
+    D2V(11),                             // data count
+    D2V(ipc::TYPE_BARRAY |               // first arg type
+        ipc::Encoder::ENC_STRN08),
+    D2V(ipc::TYPE_INT32),                // second arg type
+    D2V(ipc::Encoder::ENC_STARTD),       // start of data mark
+    D2V(4),                              // size of first arg
+    D2V(z),                              // first argument
+    D2V(b),                              // second argument
+    D2V(ipc::Encoder::ENC_ENDDAT),       // end of data mark
+  };
+
+  int rv = TestIPCBuffer(&transport, fmt, sizeof(fmt)/sizeof(fmt[0]));
+  if (rv != 0)
+    return rv;
+
+  size_t size = 0;
+  const char* data = transport.Receive(&size);
+
+  TestChannel::RxHandler rx;
+  ipc::Decoder<TestChannel::RxHandler> dec(&rx);
+  dec.OnData(data, size);
+
+  if (!dec.Success())
+    return -1;
 
   return 0;
 }

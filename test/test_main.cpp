@@ -54,6 +54,7 @@ int TestCodecRaw4();
 int TestCodecRaw5();
 int TestCodecRaw6();
 int TestCodecRaw7();
+int TestCodecRaw8();
 int TestForwardDispatch();
 int TestDispatchRoundTrip();
 int TestRawPipeTransport();
@@ -75,6 +76,7 @@ int main(int argc, char* const argv[]) {
   TEST_FN(TestCodecRaw5());
   TEST_FN(TestCodecRaw6());
   TEST_FN(TestCodecRaw7());
+  TEST_FN(TestCodecRaw8());
   TEST_FN(TestForwardDispatch());
   TEST_FN(TestDispatchRoundTrip());
   TEST_FN(TestRawPipeTransport());

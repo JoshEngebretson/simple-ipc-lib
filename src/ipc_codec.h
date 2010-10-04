@@ -133,16 +133,20 @@ private:
     data_.push_back(reinterpret_cast<void*>(v));
   }
 
+  void PushBack(unsigned int v) {
+    data_.push_back(reinterpret_cast<void*>(v));
+  }
+
   template <typename StringT> 
   void AddStr(const StringT& s ) {
-    const int times = sizeof(IPCVoidPtrVector::value_type) / sizeof(typename StringT::value_type);
+    const int times = sizeof(IPCVoidPtrVector::value_type) / sizeof(s[0]);
     size_t it = 0;
     do {
-      int v = 0;
+      unsigned int v = 0;
       for (int ix = 0; ix != times; ++ix) {
         if (it == s.size())
           break;
-        v |= (s[it]) << ix * sizeof(typename StringT::value_type) * 8;
+        v |= (s[it] & 0x000000ff) << ix * sizeof(s[0]) * 8;
         ++it;
       }
       PushBack(v);
