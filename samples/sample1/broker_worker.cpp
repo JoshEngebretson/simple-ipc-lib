@@ -336,8 +336,9 @@ bool  Worker::ReadWebPage(const char* host, short port, std::string* page) {
     return false;
   tracker.track(req2);
 
+  // Write 3Kb POST to the server. Which will echo something as big.
   INTERNET_BUFFERSA ibo = {sizeof(ibo)};
-  ibo.dwBufferTotal = 2000;
+  ibo.dwBufferTotal = 3000;
   if (!remote::HttpSendRequestExA(req2, &ibo, NULL, HSR_INITIATE, 0))
     return false;
 
@@ -358,9 +359,22 @@ bool  Worker::ReadWebPage(const char* host, short port, std::string* page) {
   if (200 != status)
     return false;
 
-  if (!remote::InternetReadFile(req2, reply, sizeof(reply)-1, &read))
+  // Drain the server data.
+  DWORD bytes_avail = 0;
+  if (!remote::InternetQueryDataAvailable(req2, &bytes_avail, 0, 0))
+    return false;
+  if (bytes_avail < 100)
     return false;
 
-  *page += "foo";
+  page->reserve(bytes_avail);
+
+  DWORD total_read = 0;
+  do {
+    if (!remote::InternetReadFile(req2, reply, sizeof(reply), &read))
+      break;
+    total_read += read;
+    page->append(reply, read);
+  } while (total_read < bytes_avail);
+  
   return true;
 }

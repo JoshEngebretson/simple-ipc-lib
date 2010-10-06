@@ -107,4 +107,10 @@ BOOL __stdcall InternetReadFile(
       DWORD dwNumberOfBytesToRead,
       LPDWORD lpdwNumberOfBytesRead);
 
+BOOL __stdcall InternetQueryDataAvailable(
+      HINTERNET hFile,
+      LPDWORD lpdwNumberOfBytesAvailable,
+      DWORD dwFlags,
+      DWORD_PTR dwContext);
+
 }  // namespace remote

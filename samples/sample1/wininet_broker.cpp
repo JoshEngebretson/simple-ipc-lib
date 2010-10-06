@@ -51,6 +51,8 @@ enum {
   kInternetWriteFileRecv,         // 21
   kInternetReadFileSend,          // 22
   kInternetReadFileRecv,          // 23
+  kInternetQueryDataAvailSend,    // 24
+  kInternetQueryDataAvailRecv,    // 25
   kInternetLastMsg
 };
 
@@ -58,24 +60,27 @@ class CommonSvcBase : public MsgHandlerBaseT,
                       public ipc::MsgOut<ActualChannelT> {
 public:
   bool OnMsgArgCountError(int /*count*/) {
+    ::OutputDebugStringA("!! svc:OnMsgArgCountError");
     return false;
   }
 
   bool OnMsgArgConvertError(int /*code*/) {
+    ::OutputDebugStringA("!! svc:OnMsgArgCountError");
     return false;
   }
 };
-
 
 class CommonRpcBase : public ipc::MsgOut<ActualChannelT> {
 public:
   CommonRpcBase() : ch_(g_ipc_transport) {}
 
   bool OnMsgArgCountError(int /*count*/) {
+    ::OutputDebugStringA("!! rpc:OnMsgArgCountError");
     return false;
   }
 
   bool OnMsgArgConvertError(int /*code*/) {
+    ::OutputDebugStringA("!! rpc:OnMsgArgConvertError");
     return false;
   }
 
@@ -977,6 +982,76 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+DEFINE_IPC_MSG_CONV(kInternetQueryDataAvailSend, 2) {
+  IPC_MSG_P1(HINTERNET, VoidPtr)        // Request handle.
+  IPC_MSG_P2(DWORD, ULong32)            // Flags
+};
+
+DEFINE_IPC_MSG_CONV(kInternetQueryDataAvailRecv, 3) {
+  IPC_MSG_P1(DWORD, ULong32)            // Last error.
+  IPC_MSG_P2(BOOL, Int32)               // Result.
+  IPC_MSG_P3(DWORD, ULong32)            // Data Available.
+};
+
+class InternetQueryDataAvailRpc : public CommonRpcBase,
+                                  public ipc::MsgIn<kInternetQueryDataAvailRecv, InternetQueryDataAvailRpc, ActualChannelT> {
+public:
+  InternetQueryDataAvailRpc() : status_(0), result_(FALSE) {}
+
+  BOOL Do(HINTERNET hFile,
+          LPDWORD lpdwNumberOfBytesAvailable,
+          DWORD dwFlags,
+          DWORD_PTR dwContext) {
+    if (dwContext)
+      return FALSE;
+
+    lpdwNumberOfBytesAvailable_ = lpdwNumberOfBytesAvailable;
+    size_t r = Recv(this, SendMsg(kInternetQueryDataAvailSend,
+                                  &ch_,
+                                  hFile,
+                                  dwFlags));
+    if (r) {
+      return FALSE;
+    }
+    if (status_) ::SetLastError(status_);
+    return result_;
+  }
+
+  size_t OnMsg(ActualChannelT*,
+               DWORD status,
+               BOOL result,
+               DWORD dwNumberOfBytesAvailable) {
+    status_ = status;
+    result_ = result;
+    if (result) {
+      *lpdwNumberOfBytesAvailable_ = dwNumberOfBytesAvailable;
+    }
+    return ipc::OnMsgReady;
+  }
+
+private:
+  DWORD status_;
+  BOOL result_;
+  LPDWORD lpdwNumberOfBytesAvailable_;
+};
+
+class InternetQueryDataAvailSvc : public CommonSvcBase,
+                                  public ipc::MsgIn<kInternetQueryDataAvailSend, InternetQueryDataAvailSvc, ActualChannelT> { 
+public:
+  INTERNAL_MSG_REFLECT(ActualChannelT)
+
+  size_t OnMsg(ActualChannelT* ch,
+               HINTERNET hFile,
+               DWORD dwFlags) {
+    DWORD bytes_avail = 0;
+    BOOL result = ::InternetQueryDataAvailable(hFile, &bytes_avail, dwFlags, 0);
+    DWORD gle = (FALSE == result) ? ::GetLastError() : 0;
+    return SendMsg(kInternetQueryDataAvailRecv, ch, gle, result, bytes_avail);
+  }
+};
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 
 class ServiceManager {
 public:
@@ -1009,6 +1084,8 @@ public:
         return &file_write_svc_;
       case InternetReadFileSvc::MSG_ID:
         return &file_read_svc_;
+      case InternetQueryDataAvailSvc::MSG_ID:
+        return &data_avail_svc_;
       default:
         return NULL;
     }
@@ -1030,6 +1107,7 @@ private:
   HttpQueryInfoASvc http_query_info_svc_;
   InternetWriteFileSvc file_write_svc_;
   InternetReadFileSvc file_read_svc_;
+  InternetQueryDataAvailSvc data_avail_svc_;
 };
 
 
@@ -1194,6 +1272,18 @@ BOOL __stdcall InternetReadFile(HINTERNET hFile,
                 lpBuffer,
                 dwNumberOfBytesToRead,
                 lpdwNumberOfBytesRead);
+}
+
+
+BOOL __stdcall InternetQueryDataAvailable(HINTERNET hFile,
+                                          LPDWORD lpdwNumberOfBytesAvailable,
+                                          DWORD dwFlags,
+                                          DWORD_PTR dwContext) {
+  InternetQueryDataAvailRpc rpc;
+  return rpc.Do(hFile,
+                lpdwNumberOfBytesAvailable,
+                dwFlags,
+                dwContext);
 }
 
 
