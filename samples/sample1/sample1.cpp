@@ -41,8 +41,12 @@ int WorkerMain(const wchar_t*) {
   }
   for (int ix = 0; ix != 3000; ++ix) {
     std::string str;
-    if (!worker.ReadWebPage("www.yahoo.com", &str))
+   // if (!worker.ReadWebPage("www.yahoo.com", &str))
+   //   return 1;
+   
+    if (!worker.ReadWebPage("localhost", 8080, &str))
       return 1;
+
     if (!worker.WriteFileStr("x01234567899876543210")) {
       ::MessageBoxW(NULL, L"error worker exit", L"sample1", MB_OK);
       return 2;

@@ -251,14 +251,30 @@ bool Worker::WriteFileStr(const std::string& str) {
   return (0 == msg.Send(&channel, L"file_one.txt", str.data(), str.size()));
 }
 
-bool  Worker::ReadWebPage(const char* host, std::string* page) {
+bool  Worker::ReadWebPage(const char* host, short port, std::string* page) {
   if (!internet_)
+    return false;
+
+  DWORD timeout = 0;
+  DWORD opt_size = sizeof(timeout);
+  if (!remote::InternetQueryOptionA(internet_,
+                                    INTERNET_OPTION_CONNECT_TIMEOUT,
+                                    &timeout, &opt_size))
+    return false;
+
+  if ((timeout < 100) || (timeout > 60000))
+    return false;
+
+  timeout = 2500;
+  if (!remote::InternetSetOptionA(internet_,
+                                  INTERNET_OPTION_RECEIVE_TIMEOUT,
+                                  &timeout, opt_size))
     return false;
 
   InternetHandleTracker tracker;
   HINTERNET conn = remote::InternetConnectA(internet_,
                                             host,
-                                            80,
+                                            port,
                                             NULL, NULL,
                                             INTERNET_SERVICE_HTTP,
                                             0, 
@@ -274,20 +290,76 @@ bool  Worker::ReadWebPage(const char* host, std::string* page) {
                         INTERNET_FLAG_NO_COOKIES |
                         INTERNET_FLAG_NO_UI;
 
-  HINTERNET req = remote::HttpOpenRequestA(conn,
-                                           "GET",
-                                           "/",
-                                           NULL,
-                                           NULL,
-                                           NULL,
-                                           request_flags,
-                                           0);
+  HINTERNET req1 = remote::HttpOpenRequestA(conn,
+                                            "GET",
+                                            "/",
+                                            NULL,
+                                            NULL,
+                                            NULL,
+                                            request_flags,
+                                            0);
 
-  if (!req)
+  if (!req1)
     return false;
-  tracker.track(req);
+  tracker.track(req1);
 
+  if (!remote::HttpSendRequestA(req1, NULL, 0, NULL, 0))
+    return false;
 
+  DWORD status = 0;
+  DWORD status_sz = sizeof(status);
+  DWORD query_flags = HTTP_QUERY_STATUS_CODE | HTTP_QUERY_FLAG_NUMBER;
+  if (!remote::HttpQueryInfoA(req1, query_flags, &status, &status_sz, NULL))
+    return false;
+
+  if (200 != status)
+    return false;
+
+  char reply[80] = {0};
+  DWORD read = 0;
+  if (!remote::InternetReadFile(req1, reply, sizeof(reply)-1, &read))
+    return false;
+
+  // The reply is of the form "=>blah". Where blah is the post url on the same server.
+  if ((read < 4) || (reply[0] != '=') || (reply[1] != '>'))
+    return false;
+
+  HINTERNET req2 = remote::HttpOpenRequestA(conn,
+                                            "POST",
+                                            &reply[2],
+                                            NULL,
+                                            NULL,
+                                            NULL,
+                                            request_flags,
+                                            0);
+  if (!req2)
+    return false;
+  tracker.track(req2);
+
+  INTERNET_BUFFERSA ibo = {sizeof(ibo)};
+  ibo.dwBufferTotal = 2000;
+  if (!remote::HttpSendRequestExA(req2, &ibo, NULL, HSR_INITIATE, 0))
+    return false;
+
+  char post_data[] = "123456789012345678901234512345678901234567890==x==";
+  DWORD write_sz = sizeof(post_data)-1;
+  DWORD written = 0;
+  for (DWORD ix = 0; ix < ibo.dwBufferTotal; ix += written) {
+    if (!remote::InternetWriteFile(req2, post_data, write_sz, &written))
+      return false;
+  }
+
+  if (!remote::HttpEndRequestA(req2, NULL, HSR_INITIATE, 0))
+    return false;
+
+  if (!remote::HttpQueryInfoA(req2, query_flags, &status, &status_sz, NULL))
+    return false;
+
+  if (200 != status)
+    return false;
+
+  if (!remote::InternetReadFile(req2, reply, sizeof(reply)-1, &read))
+    return false;
 
   *page += "foo";
   return true;

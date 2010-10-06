@@ -36,6 +36,18 @@ HINTERNET __stdcall InternetOpenA(
 BOOL __stdcall InternetCloseHandle(
       HINTERNET hInternet);
 
+BOOL __stdcall InternetQueryOptionA(
+      HINTERNET hInternet,
+      DWORD dwOption,
+      LPVOID lpBuffer,
+      LPDWORD lpdwBufferLength);
+
+BOOL __stdcall InternetSetOptionA(
+      HINTERNET hInternet,
+      DWORD dwOption,
+      LPVOID lpBuffer,
+      DWORD dwBufferLength);
+
 HINTERNET __stdcall InternetConnectA(
       HINTERNET hInternet,
       LPCSTR lpszServerName,
@@ -69,5 +81,30 @@ BOOL __stdcall HttpSendRequestExA(
       LPINTERNET_BUFFERSA lpBuffersOut,
       DWORD dwFlags,
       DWORD_PTR dwContext);
+
+BOOL __stdcall HttpEndRequestA(
+      HINTERNET hRequest,
+      LPINTERNET_BUFFERSA lpBuffersOut,
+      DWORD dwFlags,
+      DWORD_PTR dwContext);
+
+BOOL __stdcall HttpQueryInfoA(
+      HINTERNET hRequest,
+      DWORD dwInfoLevel,
+      LPVOID lpBuffer,
+      LPDWORD lpdwBufferLength,
+      LPDWORD lpdwIndex);
+
+BOOL __stdcall InternetWriteFile(
+      HINTERNET hFile,
+      LPCVOID lpBuffer,
+      DWORD dwNumberOfBytesToWrite,
+      LPDWORD lpdwNumberOfBytesWritten);
+
+BOOL __stdcall InternetReadFile(
+      HINTERNET hFile,
+      LPVOID lpBuffer,
+      DWORD dwNumberOfBytesToRead,
+      LPDWORD lpdwNumberOfBytesRead);
 
 }  // namespace remote

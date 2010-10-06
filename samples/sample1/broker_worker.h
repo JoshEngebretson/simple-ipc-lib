@@ -69,7 +69,7 @@ public:
 
   bool WriteFileStr(const std::string& str);
 
-  bool ReadWebPage(const char* url, std::string* page);
+  bool ReadWebPage(const char* url, short port, std::string* page);
 
 private:
   PipeTransport transport_;
