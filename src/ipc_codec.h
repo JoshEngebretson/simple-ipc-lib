@@ -146,7 +146,7 @@ private:
       for (int ix = 0; ix != times; ++ix) {
         if (it == s.size())
           break;
-        v |= (s[it] & 0x000000ff) << ix * sizeof(s[0]) * 8;
+        v |= static_cast<unsigned char>(s[it]) << ix * sizeof(s[0]) * 8;
         ++it;
       }
       PushBack(v);
