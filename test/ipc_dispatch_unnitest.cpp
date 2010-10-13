@@ -41,6 +41,8 @@ public:
   size_t OnMsg(TestChannel*, int ix, const char* tx) {
     return ((ix == 56789) && (IPCString(tx) == "1234")) ? 77: ipc::OnMsgReady;
   }
+
+  void* OnNewTransport() { return NULL; }
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////

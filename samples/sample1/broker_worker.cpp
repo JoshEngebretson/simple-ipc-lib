@@ -104,6 +104,8 @@ public:
     }
   }
 
+  void* OnNewTransport() { return NULL; }
+
 private:
   WriteFileMsgRecv write_file_;
   BadMessageRecv   bad_msg_;

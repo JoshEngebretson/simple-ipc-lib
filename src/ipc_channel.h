@@ -95,7 +95,21 @@ class Channel {
   // the function calls |top_dispatch| and then returns with the return
   // value of |top_dispatch|.
   //
-  // Depending on the value returned by the message handler, this function
+  // The DispatchT class is required to implement two functions:
+  // 1- Tm* MsgHandler(int msg_id);
+  //    The return value is a pointer to an object of a type that can handle |msg_id|.
+  //    This class must implement:
+  //    size_t Tm::OnMsgIn(int msg_id,
+  //                       ChannelT* ch,
+  //                       const WireType* const args[],
+  //                       int count);
+  //
+  // 2- void* OnNewTransport();
+  //    Returns the handle to a new transport. It also means to
+  //    create a new thread or process to handle messages over that
+  //    transport. Return NULL if this feature is not supported.
+  //
+  // Depending on the value returned by the message handler Tm::OnMsgIn(), this function
   // loops again (if return is 0) or finishes (return non-zero), so by necessity
   // this function never returns 0.
   //
@@ -144,14 +158,37 @@ class Channel {
         args[ix] = &handler.GetArg(ix);
       }
 
-      // Got one message. Now dispatch it.
-      retv = top_dispatch->MsgHandler(handler.MsgId())->OnMsgIn(handler.MsgId(), this, args, np);
+      if ((handler.MsgId() == kMessagePrivNewTransport) &&
+          (np == 1) && (args[0]->GetAsBits() == NULL)) {
+        // Got special rpc to create a new transport. On the receiving side we handle it entirely
+        // here by calling OnNewTransport and then sending the reply, but on the sending side it
+        // is handled by a NewTransportHandler object so it actually uses top_dispatch->MsgHandler().
+        void* handle = top_dispatch->OnNewTransport();
+        retv = handle ? SendNewTransportMsg(handle) : ipc::OnMsgLoopNext;
+      } else {
+        // Got one regular message. Now dispatch it.
+        retv = top_dispatch->MsgHandler(handler.MsgId())->OnMsgIn(handler.MsgId(), this, args, np);
+      }
 
       handler.Clear();
       decoder.Reset();
     } while(ipc::OnMsgLoopNext == retv);
 
     return retv;
+  }
+
+  // Issues an rpc to the remote side, usually the server to get a new transport identifier, it is
+  // some OS-dependent value that can be used to create a pipe or domain socket. It implies that
+  // somehow the remote side will spin some machinery to answer messages sent this way.
+  void* InitNewTransport() {
+    size_t rc = SendNewTransportMsg(NULL);
+    if (rc)
+      return NULL;
+    NewTransportHandler handler;
+    rc = Receive(&handler);
+    if (rc != ipc::OnMsgReady)
+      return NULL;
+    return handler.Handle();
   }
 
   // This class is using during receiving as the callback handler for the decoder.
@@ -258,6 +295,36 @@ class Channel {
   };
 
 private:
+  // Class to handle the client side of the internal kMessagePrivNewTransport message
+  // which carries a transport id, usually a handle value on windows.
+  class NewTransportHandler {
+  public:
+    NewTransportHandler() : t_handle_(NULL) {}
+
+    NewTransportHandler* MsgHandler(int) {
+      return this;
+    }
+
+    size_t OnMsgIn(int msg_id, Channel*, const WireType* const args[], int count) {
+      if ((count != 1) && (msg_id != kMessagePrivNewTransport))
+        return RcErrNewTransport;
+      t_handle_ = args[0]->GetAsBits();
+      return ipc::OnMsgReady;
+    }
+
+    void* OnNewTransport() { return NULL; }
+    void* Handle() const { return t_handle_; }
+  
+  private:
+    void* t_handle_;
+  };
+
+  size_t SendNewTransportMsg(void* handle) {
+    WireType wt(handle);
+    const WireType* const arg[] = { &wt };
+    return Send(kMessagePrivNewTransport, arg, 1);
+  }
+
   // Uses |EncoderT| to encode one message element in the outgoing buffer.
   bool AddMsgElement(EncoderT* encoder, const WireType& wtype) {
     switch (wtype.Id()) {

@@ -29,6 +29,8 @@ const size_t RcErrTransportRead     = static_cast<size_t>(-5);
 const size_t RcErrTransportConnect  = static_cast<size_t>(-6);
 const size_t RcErrDecoderFormat     = static_cast<size_t>(-7);
 const size_t RcErrDecoderArgs       = static_cast<size_t>(-8);
+const size_t RcErrNewTransport      = static_cast<size_t>(-9);
+const size_t RcErrBadMessageId      = static_cast<size_t>(-10);
 
 // For the return on obj.OnMsg() when calling Channel::Receive(obj) there
 // are two critical values:
@@ -48,6 +50,14 @@ const size_t OnMsgAppErrorBase  = 2;  // Application specific errors start here.
 //    ... operation here
 //    return SendMsg(kRepyId, ch, result1, ..);
 //  }
+
+
+// Reserved messages ids. User messages should start at kMessagePrivLastId and
+// above.
+const int kMessagePrivNewTransport   = 1;
+const int kMessagePrivControl        = 2;
+const int kMessagePrivLastId         = 3;
+
 
 }  // namespace ipc.
 

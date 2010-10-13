@@ -84,6 +84,8 @@ public:
     return false;
   }
 
+  void* OnNewTransport() { return NULL; }
+
 protected: 
   template <typename TReceiver>
   size_t Recv(TReceiver* recv, size_t result) {

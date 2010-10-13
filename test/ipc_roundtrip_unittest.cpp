@@ -77,6 +77,8 @@ public:
 
 namespace  {
 
+TH_RETURN WINAPI SumMultOddRpcSvcThread(void* ctx);
+
 // This class models the RPC server. 
 class SumMultOddRpcSvc : public DispTestMsg,
                          public ipc::MsgIn<28, SumMultOddRpcSvc, PipeChannel> {
@@ -103,6 +105,13 @@ public:
     if (msg.Send(&channel_, ComputeOddStuff(x, y)) != 0)
       return ipc::OnMsgAppErrorBase;
     return ipc::OnMsgLoopNext;
+  }
+
+  void* OnNewTransport() { 
+    PipePair* pp2 = new PipePair;
+    HANDLE thread = ::CreateThread(NULL, 0, SumMultOddRpcSvcThread, pp2, 0, NULL);
+    ::CloseHandle(thread);
+    return pp2->fd2();
   }
 
 private:
@@ -138,6 +147,11 @@ public:
         transport_.OpenClient(pp->fd2());
   }
 
+  SumMultOddRpcClient(void* transport_handle)
+      : channel_(&transport_) {
+        transport_.OpenClient(transport_handle);
+  }
+
   // Sends the RPC request to the server and waits for the answer.
   bool Call(int x, int y, IPCString* answer) {
     if (!transport_.IsConnected())
@@ -151,6 +165,10 @@ public:
     return true;
   }
 
+  void* GetNewPipeHandle() {
+    return channel_.InitNewTransport();
+  }
+
   // Called when the appropiate message (reply) arrives from the server.
   size_t OnMsg(PipeChannel*, const char* ans) {
     if (!ans)
@@ -158,6 +176,8 @@ public:
     ans_ = ans;
     return ipc::OnMsgReady;
   }
+
+  void* OnNewTransport() { return NULL; }
 
 private:
   IPCString ans_;
@@ -188,30 +208,52 @@ int TestFullRoundTrip() {
     return 1;
   }  
 #endif
-  SumMultOddRpcClient client(&pp);
+  SumMultOddRpcClient client1(&pp);
 
   IPCString ans;
-//$$  volatile DWORD gtc = ::GetTickCount();
 
   for (int ix = 0; ix != 1000; ++ix) {
-    if (!client.Call(123546, 567890, &ans))
+    if (!client1.Call(123546, 567890, &ans))
       return 1;
     if (ans != "Rpc:70160537940")
       return 2;
-    if (!client.Call(1123546, 1567890, &ans))
+    if (!client1.Call(1123546, 1567890, &ans))
       return 3;
     if (ans != "Rpc:1761596537940")
       return 4;
-    if (!client.Call(1123546, 1567891, &ans))
+    if (!client1.Call(1123546, 1567891, &ans))
       return 5;
     if (ans != "Rpc:2691437")
       return 6;
   }
+  
+  // Now, lets ask the rpc server for a new transport. This causes a second
+  // server thread to be created executing the same code. The code can be seen
+  // at OnNewTransport(). After we receive the new pipe handle, we create a
+  // second rpc client and alternate rpcs between them.
+
+  HANDLE pipe = client1.GetNewPipeHandle();
+  if (!pipe)
+    return 7;
+
+  SumMultOddRpcClient client2(pipe);
+
+  for (int ix = 0; ix != 200; ++ix) {
+    if (!client2.Call(123546, 567890, &ans))
+      return 8;
+    if (ans != "Rpc:70160537940")
+      return 9;
+    if (!client1.Call(1123546, 1567890, &ans))
+      return 10;
+    if (ans != "Rpc:1761596537940")
+      return 11;
+  }
 
   // Measure the speed of the IPC. In my Z600 Win7 it clocks 156ms for 3*1000 messages
   // which comes about 50uS each which gives you 25uS each way.
-  
-//$$  gtc = ::GetTickCount() - gtc;
+  //$$  volatile DWORD gtc = ::GetTickCount();
+  //$$  gtc = ::GetTickCount() - gtc;
+
   return 0;
 }
 

@@ -15,6 +15,7 @@
 #ifndef SIMPLE_IPC_MSG_DISPATCH_H_
 #define SIMPLE_IPC_MSG_DISPATCH_H_
 
+#include "ipc_constants.h"
 #include "ipc_wire_types.h"
 
 // The two classes in this file ipc::MsgIn and ipc::MsgOut are nice wrappers to
@@ -50,7 +51,7 @@ public:
 
   size_t OnMsgIn(int msg_id, ChannelT* ch, const WireType* const args[], int count) {
     if (MsgId != msg_id) {
-      return static_cast<size_t>(-1);
+      return static_cast<size_t>(ipc::RcErrBadMessageId);
     }
     if (count != PC::kNumParams)
       return static_cast<DerivedT*>(this)->OnMsgArgCountError(count);
