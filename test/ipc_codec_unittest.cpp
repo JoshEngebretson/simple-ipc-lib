@@ -41,6 +41,13 @@ public:
     memcpy(u_.cv, c, sizeof(u_.cv));
   }
 
+  explicit D2V(char c0, char c1, char c2, char c3) {
+    u_.cv[0] = c0;
+    u_.cv[1] = c1;
+    u_.cv[2] = c2;
+    u_.cv[3] = c3;
+  }
+
   explicit D2V(const void* p) {
     u_.pv = const_cast<void*>(p);
   }
@@ -128,8 +135,10 @@ int TestCodecRaw1() {
 
 int TestCodecRaw2() {
   const wchar_t* tx = NULL;
-  const wchar_t ty[] = L"ab de";
-  const unsigned int ux = 3221225472u;
+  const wchar_t ty[] = L"ab" L"\x040b" L"yz";       // ab + Capital Tshe + yz
+  const unsigned int ux = 3221225473u;
+
+  const char* cty = reinterpret_cast<const char*>(ty);
 
   TestTransport transport;
   TestChannel channel(&transport);
@@ -153,13 +162,13 @@ int TestCodecRaw2() {
     D2V(-1),                                // first arg (null string)
     D2V(5),                                 // second arg char count
 #if defined(WIN32)
-    D2V("a\0b\0"),                          // second arg part 1
-    D2V(" \0d\0"),                          // second arg part 2
-    D2V("e\0\0\0"),                         // second arg part 3
+    D2V(cty[0], cty[1], cty[2], cty[3]),    // second arg part 1 (a b)
+    D2V(cty[4], cty[5], cty[6], cty[7]),    // second arg part 2 (Tshe y)
+    D2V(cty[8], cty[9], 0, 0),              // second arg part 3
 #else
     D2V(L'a'),
     D2V(L'b'),
-    D2V(L' '),
+    D2V(L'\x040b'),
     D2V(L'd'),
     D2V(L'e'),
 #endif

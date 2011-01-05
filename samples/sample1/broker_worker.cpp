@@ -62,7 +62,7 @@ public:
     return OnMsgInX(msg_id, ch, args, count);
   }
 
-  size_t OnMsg(PipeChannel*, const wchar_t* /*fname*/, const ipc::ByteArray& /*ba*/) {
+  size_t OnMsg(PipeChannel*, const wchar_t* fname, const ipc::ByteArray& /*ba*/) {
     if (!broker_->QueryPolicy(Broker::FILES)) {
       return 0;
     }

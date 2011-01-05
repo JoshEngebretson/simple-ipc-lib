@@ -146,11 +146,27 @@ private:
       for (int ix = 0; ix != times; ++ix) {
         if (it == s.size())
           break;
-        v |= static_cast<unsigned char>(s[it]) << ix * sizeof(s[0]) * 8;
+        v |= PackChar(s[it], ix);
         ++it;
       }
       PushBack(v);
     } while (it != s.size());
+  }
+
+  unsigned int PackChar(char c, int offset) const {
+    return static_cast<unsigned char>(c) << (offset * 8);
+  }
+
+#if 0
+  unsigned int PackChar(wchar_t c, int offset) const {
+    unsigned int u = (static_cast<unsigned char>(c) << 8) | static_cast<unsigned char>(c >> 8)
+    return  u << offset * 16;
+  }
+#endif
+
+  unsigned int PackChar(wchar_t c, int offset) const {
+    const char* t = reinterpret_cast<const char*>(&c);
+    return  (PackChar(t[0], 0) | PackChar(t[1], 1)) << (offset * 16);
   }
 
   IPCVoidPtrVector data_;
