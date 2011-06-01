@@ -24,7 +24,7 @@ public:
   HANDLE fd1() const { return srv_; }
   HANDLE fd2() const { return cln_; }
 
-  static HANDLE OpenPipeServer(const wchar_t* name);
+  static HANDLE OpenPipeServer(const wchar_t* name, bool low_integrity = true);
   static HANDLE OpenPipeClient(const wchar_t* name, bool inherit, bool impersonate);
 
 private:

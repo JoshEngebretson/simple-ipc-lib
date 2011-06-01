@@ -13,20 +13,47 @@
 // limitations under the License.
 
 #include "pipe_win.h"
+#include <Sddl.h>
+#include <AccCtrl.h>
+#include <Aclapi.h>
 
 namespace {
 const wchar_t kPipePrefix[] = L"\\\\.\\pipe\\";
 const int kPipeBufferSz = 4 * 1024;
 }  // namespace
 
+bool checkIntegritySupport() {
+  OSVERSIONINFO osvi;
+
+  ZeroMemory(&osvi, sizeof(OSVERSIONINFO));
+  osvi.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
+  GetVersionEx(&osvi);
+
+  return osvi.dwMajorVersion > 5;
+}
+
 LONG g_pipe_seq = 0;
 
-HANDLE PipePair::OpenPipeServer(const wchar_t* name) {
+HANDLE PipePair::OpenPipeServer(const wchar_t* name, bool low_integrity) {
+  SECURITY_ATTRIBUTES sa = {0};
+  SECURITY_ATTRIBUTES *psa = 0;
+
+  static const bool is_integrity_supported = checkIntegritySupport();
+
+  if (is_integrity_supported && low_integrity) {
+    psa = &sa;
+    sa.nLength = sizeof(SECURITY_ATTRIBUTES);
+    sa.bInheritHandle = TRUE;
+    if (!ConvertStringSecurityDescriptorToSecurityDescriptor(
+        TEXT("S:(ML;;NWNR;;;LW)"), SDDL_REVISION_1, &sa.lpSecurityDescriptor, NULL)) 
+      return INVALID_HANDLE_VALUE;
+  }
+
   IPCWString pipename(kPipePrefix);
   pipename.append(name);
   return ::CreateNamedPipeW(pipename.c_str(), PIPE_ACCESS_DUPLEX | FILE_FLAG_FIRST_PIPE_INSTANCE,
                             PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_WAIT,
-                            1, kPipeBufferSz, kPipeBufferSz, 200, NULL);
+                            1, kPipeBufferSz, kPipeBufferSz, 200, psa);
 }
 
 HANDLE PipePair::OpenPipeClient(const wchar_t* name, bool inherit, bool impersonate) {
