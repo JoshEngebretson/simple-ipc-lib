@@ -1,0 +1,1 @@
+A C++ library that can replace the use of COM for same machine IPC calls.
